@@ -6,6 +6,7 @@ import {
   getPriorityColor,
   getPriorityIndicator,
 } from "../../lib/planParser";
+import { CheckCircle2, HelpCircle, ListTodo } from "lucide-react";
 
 interface BeadCardProps {
   issue: RoadmapIssue;
@@ -38,15 +39,15 @@ export function BeadCard({
         className={`
           flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer
           transition-all duration-150 ease-in-out
-          ${isExpanded ? "bg-gray-100" : "bg-white hover:bg-gray-50"}
-          ${depth > 0 ? "ml-6 border-l-2 border-gray-200" : ""}
+          ${isExpanded ? "bg-night-bg-highlight" : "bg-night-surface hover:bg-night-bg-highlight"}
+          ${depth > 0 ? "ml-6 border-l-2 border-night-border" : ""}
         `}
         style={{ borderLeftColor: depth > 0 ? priorityColor : undefined }}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {/* Expand/collapse chevron */}
         <span
-          className={`text-gray-400 transition-transform duration-150 ${
+          className={`text-text-muted transition-transform duration-150 ${
             isExpanded ? "rotate-90" : ""
           }`}
         >
@@ -59,16 +60,16 @@ export function BeadCard({
         </span>
 
         {/* Issue ID */}
-        <span className="text-gray-500 font-mono text-sm">{issue.id}</span>
+        <span className="text-text-muted font-mono text-sm">{issue.id}</span>
 
         {/* Title */}
-        <span className="font-medium text-gray-900 flex-1 truncate">
+        <span className="font-medium text-text-bright flex-1 truncate">
           {issue.title}
         </span>
 
         {/* Type badge */}
         {isEpic && (
-          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
+          <span className="px-2 py-0.5 bg-purple-900/30 text-neon-magenta text-xs rounded-full font-medium">
             EPIC
           </span>
         )}
@@ -82,7 +83,7 @@ export function BeadCard({
 
         {/* Blocked indicator */}
         {issue.isBlocked && (
-          <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
+          <span className="px-2 py-0.5 bg-red-900/30 text-neon-pink text-xs rounded-full font-medium">
             BLOCKED
           </span>
         )}
@@ -92,21 +93,21 @@ export function BeadCard({
       {isExpanded && (
         <div
           className={`
-            mt-1 px-4 py-4 bg-gray-50 rounded-lg
+            mt-1 px-4 py-4 bg-night-surface-bright rounded-lg
             ${depth > 0 ? "ml-6" : ""}
           `}
         >
           {/* Summary */}
           {parsedPlan.summary && (
-            <p className="text-gray-700 mb-4">{parsedPlan.summary}</p>
+            <p className="text-text-normal mb-4">{parsedPlan.summary}</p>
           )}
 
           {/* Stats row */}
-          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+          <div className="flex items-center gap-4 text-sm text-text-muted mb-4">
             {/* Acceptance criteria */}
             {parsedPlan.acceptanceCriteriaCount > 0 && (
               <div className="flex items-center gap-1">
-                <span>✓</span>
+                <CheckCircle2 className="w-4 h-4 text-neon-green" />
                 <span>{formatCriteriaProgress(parsedPlan)}</span>
               </div>
             )}
@@ -114,7 +115,7 @@ export function BeadCard({
             {/* Open questions */}
             {parsedPlan.openQuestions.length > 0 && (
               <div className="flex items-center gap-1">
-                <span>?</span>
+                <HelpCircle className="w-4 h-4 text-neon-orange" />
                 <span>{parsedPlan.openQuestions.length} questions</span>
               </div>
             )}
@@ -122,7 +123,7 @@ export function BeadCard({
             {/* Children count */}
             {hasChildren && (
               <div className="flex items-center gap-1">
-                <span>📋</span>
+                <ListTodo className="w-4 h-4 text-neon-blue" />
                 <span>{issue.children!.length} subtasks</span>
               </div>
             )}
@@ -131,18 +132,18 @@ export function BeadCard({
           {/* Open questions preview */}
           {parsedPlan.openQuestions.length > 0 && (
             <div className="mb-4">
-              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">
+              <div className="text-xs uppercase tracking-wider text-text-muted mb-2">
                 Open Questions
               </div>
-              <ul className="text-sm text-gray-600 space-y-1">
+              <ul className="text-sm text-text-normal space-y-1">
                 {parsedPlan.openQuestions.slice(0, 3).map((q, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="text-amber-500">?</span>
+                    <span className="text-neon-orange">?</span>
                     <span className="truncate">{q}</span>
                   </li>
                 ))}
                 {parsedPlan.openQuestions.length > 3 && (
-                  <li className="text-gray-400 italic">
+                  <li className="text-text-muted italic">
                     +{parsedPlan.openQuestions.length - 3} more...
                   </li>
                 )}
@@ -157,8 +158,8 @@ export function BeadCard({
                 e.stopPropagation();
                 onEditPlan?.(issue.id);
               }}
-              className="px-3 py-1.5 bg-grassy-green text-white text-sm rounded-md
-                hover:bg-green-700 transition-colors"
+              className="px-3 py-1.5 bg-neon-cyan text-night-bg text-sm rounded-md
+                hover:shadow-[0_0_12px_rgba(125,207,255,0.4)] transition-all font-medium"
             >
               Edit Plan
             </button>
@@ -167,8 +168,8 @@ export function BeadCard({
                 e.stopPropagation();
                 onViewFull?.(issue.id);
               }}
-              className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-md
-                hover:bg-gray-300 transition-colors"
+              className="px-3 py-1.5 bg-night-surface text-text-normal text-sm rounded-md
+                hover:bg-night-bg-highlight transition-colors"
             >
               View Full
             </button>
@@ -197,14 +198,14 @@ export function BeadCard({
 function getStatusBadge(status: string): { label: string; className: string } {
   switch (status) {
     case "open":
-      return { label: "OPEN", className: "bg-blue-100 text-blue-700" };
+      return { label: "OPEN", className: "bg-blue-900/30 text-neon-blue" };
     case "in_progress":
-      return { label: "IN PROGRESS", className: "bg-yellow-100 text-yellow-700" };
+      return { label: "IN PROGRESS", className: "bg-yellow-900/30 text-neon-yellow" };
     case "closed":
-      return { label: "DONE", className: "bg-green-100 text-green-700" };
+      return { label: "DONE", className: "bg-green-900/30 text-neon-green" };
     case "blocked":
-      return { label: "BLOCKED", className: "bg-red-100 text-red-700" };
+      return { label: "BLOCKED", className: "bg-red-900/30 text-neon-pink" };
     default:
-      return { label: status.toUpperCase(), className: "bg-gray-100 text-gray-700" };
+      return { label: status.toUpperCase(), className: "bg-night-surface-bright text-text-normal" };
   }
 }

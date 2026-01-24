@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useIdeation } from "../hooks/useIdeation";
 import { MarkdownViewer } from "../components/MarkdownViewer";
 import { extractSummary } from "../lib/planParser";
+import { ChevronLeft } from "lucide-react";
 
 type ViewMode = "split" | "edit" | "preview";
 
@@ -55,15 +56,15 @@ export function IdeationPad() {
 
   if (!issueId) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-        <p className="text-red-500">No issue ID provided</p>
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+        <p className="text-neon-pink">No issue ID provided</p>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
         <div className="flex items-center justify-center py-12">
           <div className="text-text-muted">Loading issue...</div>
         </div>
@@ -73,11 +74,11 @@ export function IdeationPad() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-        <p className="text-red-500">Error loading issue: {error.message}</p>
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+        <p className="text-neon-pink">Error loading issue: {error.message}</p>
         <button
           onClick={() => navigate("/roadmap")}
-          className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+          className="mt-4 px-4 py-2 bg-night-surface text-text-normal rounded-md hover:bg-night-surface-bright transition-colors"
         >
           Back to Roadmap
         </button>
@@ -88,37 +89,25 @@ export function IdeationPad() {
   const summary = extractSummary(content);
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-xl border-2 border-sunny-yellow-border overflow-hidden">
+    <div className="h-full flex flex-col bg-card-bg rounded-xl border border-neon-magenta overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-night-border bg-night-bg-highlight">
         <div className="flex items-center gap-4">
           <button
             onClick={handleCancel}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-text-muted hover:text-text-primary transition-colors"
             title="Back to Roadmap"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-lg font-semibold text-text-bright">
               {issue?.title || "Ideation Pad"}
             </h1>
-            <p className="text-sm text-gray-500 font-mono">{issueId}</p>
+            <p className="text-sm text-text-muted font-mono">{issueId}</p>
           </div>
           {hasChanges && (
-            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
+            <span className="px-2 py-0.5 bg-orange-900/30 text-neon-orange text-xs rounded-full font-medium">
               Unsaved
             </span>
           )}
@@ -126,33 +115,33 @@ export function IdeationPad() {
 
         <div className="flex items-center gap-3">
           {/* View mode toggle */}
-          <div className="flex bg-gray-200 rounded-md p-0.5">
+          <div className="flex bg-night-surface-bright rounded-md p-0.5">
             <button
               onClick={() => setViewMode("edit")}
-              className={`px-3 py-1 text-sm rounded ${
+              className={`px-3 py-1 text-sm rounded transition-colors ${
                 viewMode === "edit"
-                  ? "bg-white shadow-sm text-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-night-bg shadow-sm text-text-bright"
+                  : "text-text-muted hover:text-text-primary"
               }`}
             >
               Edit
             </button>
             <button
               onClick={() => setViewMode("split")}
-              className={`px-3 py-1 text-sm rounded ${
+              className={`px-3 py-1 text-sm rounded transition-colors ${
                 viewMode === "split"
-                  ? "bg-white shadow-sm text-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-night-bg shadow-sm text-text-bright"
+                  : "text-text-muted hover:text-text-primary"
               }`}
             >
               Split
             </button>
             <button
               onClick={() => setViewMode("preview")}
-              className={`px-3 py-1 text-sm rounded ${
+              className={`px-3 py-1 text-sm rounded transition-colors ${
                 viewMode === "preview"
-                  ? "bg-white shadow-sm text-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-night-bg shadow-sm text-text-bright"
+                  : "text-text-muted hover:text-text-primary"
               }`}
             >
               Preview
@@ -162,17 +151,17 @@ export function IdeationPad() {
           {/* Action buttons */}
           <button
             onClick={handleCancel}
-            className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="px-4 py-1.5 text-sm text-text-muted hover:text-text-primary transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!hasChanges || isSaving}
-            className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+            className={`px-4 py-1.5 text-sm rounded-md transition-all ${
               hasChanges && !isSaving
-                ? "bg-grassy-green text-white hover:bg-green-700"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                ? "bg-neon-cyan text-night-bg hover:shadow-[0_0_12px_rgba(125,207,255,0.4)]"
+                : "bg-night-surface text-text-muted cursor-not-allowed"
             }`}
           >
             {isSaving ? "Saving..." : "Save"}
@@ -182,8 +171,8 @@ export function IdeationPad() {
 
       {/* Summary preview */}
       {summary && (
-        <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
-          <p className="text-sm text-blue-700">
+        <div className="px-6 py-3 bg-blue-900/20 border-b border-blue-900/30">
+          <p className="text-sm text-neon-blue">
             <span className="font-medium">Roadmap summary:</span> {summary}
           </p>
         </div>
@@ -194,17 +183,17 @@ export function IdeationPad() {
         {/* Editor */}
         {(viewMode === "edit" || viewMode === "split") && (
           <div
-            className={`flex flex-col ${viewMode === "split" ? "w-1/2 border-r border-gray-200" : "flex-1"}`}
+            className={`flex flex-col ${viewMode === "split" ? "w-1/2 border-r border-night-border" : "flex-1"}`}
           >
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
-              <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+            <div className="px-4 py-2 bg-night-bg-highlight border-b border-night-border">
+              <span className="text-xs text-text-muted uppercase tracking-wider font-medium">
                 Editor
               </span>
             </div>
             <textarea
               value={content}
               onChange={(e) => handleContentChange(e.target.value)}
-              className="flex-1 p-4 font-mono text-sm resize-none focus:outline-none bg-gray-900 text-gray-100"
+              className="flex-1 p-4 font-mono text-sm resize-none focus:outline-none bg-night-bg text-text-bright placeholder:text-text-muted"
               placeholder="Write your plan in markdown..."
               spellCheck={false}
             />
@@ -216,16 +205,16 @@ export function IdeationPad() {
           <div
             className={`flex flex-col ${viewMode === "split" ? "w-1/2" : "flex-1"}`}
           >
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
-              <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+            <div className="px-4 py-2 bg-night-bg-highlight border-b border-night-border">
+              <span className="text-xs text-text-muted uppercase tracking-wider font-medium">
                 Preview
               </span>
             </div>
-            <div className="flex-1 p-4 overflow-auto">
+            <div className="flex-1 p-4 overflow-auto bg-night-surface">
               {content ? (
                 <MarkdownViewer content={content} />
               ) : (
-                <p className="text-gray-400 italic">
+                <p className="text-text-muted italic">
                   Start writing to see preview...
                 </p>
               )}

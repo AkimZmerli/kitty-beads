@@ -80,7 +80,9 @@ export const TerminalInstance = forwardRef<TerminalInstanceHandle, TerminalInsta
       if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const ws = new WebSocket(`${protocol}//${window.location.host}/api/terminal/${sessionId}`);
+      // In dev mode (port 5173), connect directly to backend on 8080
+      const host = window.location.port === '5173' ? 'localhost:8080' : window.location.host;
+      const ws = new WebSocket(`${protocol}//${host}/api/terminal/${sessionId}`);
       wsRef.current = ws;
 
       ws.onopen = () => {

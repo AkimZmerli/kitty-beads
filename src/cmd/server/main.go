@@ -127,7 +127,6 @@ func main() {
 	mux.HandleFunc("/api/issues/", server.handleIssue)
 	mux.HandleFunc("/api/ready", server.handleReadyWork)
 	mux.HandleFunc("/api/health", server.handleHealth)
-	mux.HandleFunc("/api/constitution", server.handleConstitution)
 	mux.HandleFunc("/api/diagnostics", server.handleDiagnostics)
 	mux.HandleFunc("/api/artifact/", server.handleArtifact)
 
@@ -528,25 +527,6 @@ func (s *Server) handleReadyWork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, issues)
-}
-
-func (s *Server) handleConstitution(w http.ResponseWriter, r *http.Request) {
-	// Look for CLAUDE.md or README.md
-	paths := []string{
-		filepath.Join(s.rootDir, "CLAUDE.md"),
-		filepath.Join(s.rootDir, "README.md"),
-	}
-
-	for _, path := range paths {
-		data, err := os.ReadFile(path)
-		if err == nil {
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.Write(data)
-			return
-		}
-	}
-
-	http.Error(w, "Constitution not found", http.StatusNotFound)
 }
 
 func (s *Server) handleDiagnostics(w http.ResponseWriter, r *http.Request) {

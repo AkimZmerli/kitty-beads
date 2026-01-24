@@ -15,29 +15,35 @@ interface LaneConfig {
   borderColor: string;
 }
 
+// Tokyo Night themed lane colors with subtle tints
 const LANES: LaneConfig[] = [
   {
     key: "planned",
     title: "Planned",
-    bgColor: "#e0f2fe",
-    borderColor: "#0284c7",
+    bgColor: "rgba(125, 207, 255, 0.08)",
+    borderColor: "#7dcfff",
   },
   {
     key: "doing",
     title: "In Progress",
-    bgColor: "#fef3c7",
-    borderColor: "#d97706",
+    bgColor: "rgba(224, 175, 104, 0.08)",
+    borderColor: "#e0af68",
   },
   {
     key: "for_review",
     title: "Review",
-    bgColor: "#e0e7ff",
-    borderColor: "#4f46e5",
+    bgColor: "rgba(122, 162, 247, 0.08)",
+    borderColor: "#7aa2f7",
   },
-  { key: "done", title: "Done", bgColor: "#dcfce7", borderColor: "#16a34a" },
+  {
+    key: "done",
+    title: "Done",
+    bgColor: "rgba(158, 206, 106, 0.08)",
+    borderColor: "#9ece6a",
+  },
 ];
 
-const PRIORITY_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#6b7280"];
+const PRIORITY_COLORS = ["#f7768e", "#ff9e64", "#e0af68", "#9ece6a", "#565f89"];
 
 function KanbanCard({
   issue,
@@ -51,16 +57,15 @@ function KanbanCard({
   return (
     <div
       onClick={onClick}
-      className="bg-white p-3 rounded-lg cursor-pointer transition-transform hover:-translate-y-0.5"
+      className="bg-night-surface p-3 rounded-lg cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
       style={{
         borderLeft: `4px solid ${priorityColor}`,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
       }}
     >
       <div className="flex justify-between items-center text-xs text-text-muted mb-1">
         <span>{issue.id}</span>
         {issue.is_blocked && (
-          <span className="text-red-500 font-semibold text-[0.7rem]">
+          <span className="text-neon-pink font-semibold text-[0.7rem]">
             BLOCKED
           </span>
         )}
@@ -124,15 +129,15 @@ function IssueModal({ issueId, onClose }: IssueModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-xl w-[90%] max-w-[700px] max-h-[80vh] overflow-auto shadow-modal">
-        <div className="flex justify-between items-center p-5 border-b border-border">
-          <h3 className="text-lg font-semibold">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative bg-card-bg rounded-xl w-[90%] max-w-[700px] max-h-[80vh] overflow-auto shadow-modal border border-night-border">
+        <div className="flex justify-between items-center p-5 border-b border-night-border">
+          <h3 className="text-lg font-semibold text-text-primary">
             {loading ? "Loading..." : `${issue?.id}: ${issue?.title}`}
           </h3>
           <button
             onClick={onClose}
-            className="text-2xl text-text-muted hover:text-text-primary"
+            className="text-2xl text-text-muted hover:text-text-primary transition-colors"
           >
             &times;
           </button>
@@ -143,14 +148,14 @@ function IssueModal({ issueId, onClose }: IssueModalProps) {
           ) : issue ? (
             <>
               <div className="flex gap-2 flex-wrap mb-5">
-                <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                <span className="bg-red-900/30 text-neon-pink px-3 py-1 rounded-full text-sm font-medium">
                   P{issue.priority}
                 </span>
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                <span className="bg-blue-900/30 text-neon-blue px-3 py-1 rounded-full text-sm font-medium">
                   {issue.status || "open"}
                 </span>
                 {issue.assignee && (
-                  <span className="bg-gray-100 text-text-secondary px-3 py-1 rounded-full text-sm">
+                  <span className="bg-night-surface-bright text-text-secondary px-3 py-1 rounded-full text-sm">
                     {issue.assignee}
                   </span>
                 )}
@@ -160,17 +165,15 @@ function IssueModal({ issueId, onClose }: IssueModalProps) {
               />
               {issue.design && (
                 <>
-                  <hr className="my-5 border-border" />
-                  <h4 className="text-grassy-green font-semibold mb-3">
-                    Design
-                  </h4>
+                  <hr className="my-5 border-night-border" />
+                  <h4 className="text-neon-cyan font-semibold mb-3">Design</h4>
                   <MarkdownViewer content={issue.design} />
                 </>
               )}
               {issue.acceptance_criteria && (
                 <>
-                  <hr className="my-5 border-border" />
-                  <h4 className="text-grassy-green font-semibold mb-3">
+                  <hr className="my-5 border-night-border" />
+                  <h4 className="text-neon-cyan font-semibold mb-3">
                     Acceptance Criteria
                   </h4>
                   <MarkdownViewer content={issue.acceptance_criteria} />
@@ -178,7 +181,7 @@ function IssueModal({ issueId, onClose }: IssueModalProps) {
               )}
             </>
           ) : (
-            <p className="text-red-500">Failed to load issue</p>
+            <p className="text-neon-pink">Failed to load issue</p>
           )}
         </div>
       </div>
@@ -192,8 +195,8 @@ export function Kanban({ featureId }: KanbanProps) {
 
   if (!featureId) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-        <h2 className="text-grassy-green text-2xl font-bold mb-4">
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+        <h2 className="text-neon-cyan text-2xl font-bold mb-4 drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">
           Kanban Board
         </h2>
         <p className="text-text-muted text-center py-8">
@@ -205,8 +208,8 @@ export function Kanban({ featureId }: KanbanProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-        <h2 className="text-grassy-green text-2xl font-bold mb-4">
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+        <h2 className="text-neon-cyan text-2xl font-bold mb-4 drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">
           Kanban Board
         </h2>
         <p className="text-text-muted text-center py-8">Loading...</p>
@@ -216,11 +219,11 @@ export function Kanban({ featureId }: KanbanProps) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-        <h2 className="text-grassy-green text-2xl font-bold mb-4">
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+        <h2 className="text-neon-cyan text-2xl font-bold mb-4 drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">
           Kanban Board
         </h2>
-        <p className="text-red-500 text-center py-8">
+        <p className="text-neon-pink text-center py-8">
           Error loading kanban data
         </p>
       </div>
@@ -237,12 +240,13 @@ export function Kanban({ featureId }: KanbanProps) {
   const doneCount = lanes.done.length;
 
   return (
-    <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-      <h2 className="text-grassy-green text-2xl font-bold mb-4">
+    <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+      <h2 className="text-neon-cyan text-2xl font-bold mb-4 drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">
         Kanban Board
       </h2>
       <div className="text-text-secondary text-lg mb-6">
-        {doneCount}/{totalIssues} tasks completed
+        <span className="text-neon-green">{doneCount}</span>/{totalIssues} tasks
+        completed
       </div>
       <div className="grid grid-cols-4 gap-5">
         {LANES.map((config) => (

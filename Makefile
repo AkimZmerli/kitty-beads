@@ -16,10 +16,13 @@ run: build
 	@echo "Starting kitty-beads server..."
 	./bin/kitty-beads -port 8080
 
-# Run in development mode with auto-reload
+# Run in development mode with hot reload frontend
 dev:
-	@echo "Starting development server..."
-	cd src && go run ./cmd/server -port 8080
+	@echo "Starting development servers..."
+	@echo "Backend: http://localhost:8080 (API)"
+	@echo "Frontend: http://localhost:5173 (dev server)"
+	@cd src && go run ./cmd/server -port 8080 & \
+	cd src/cmd/server/frontend && npm run dev
 
 # Install dependencies
 deps:
@@ -66,4 +69,5 @@ help:
 	@echo "  make clean     - Remove build artifacts"
 	@echo "  make help      - Show this help"
 	@echo ""
-	@echo "Server runs on http://localhost:8080 by default"
+	@echo "Production: http://localhost:8080"
+	@echo "Development: http://localhost:5173 (with hot reload)"
