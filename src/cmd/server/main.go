@@ -131,8 +131,9 @@ func main() {
 	mux.HandleFunc("/api/diagnostics", server.handleDiagnostics)
 	mux.HandleFunc("/api/artifact/", server.handleArtifact)
 
-	// WebSocket terminal
-	mux.HandleFunc("/api/terminal", server.handleTerminal)
+	// WebSocket terminal (supports /api/terminal/{sessionId} for multi-tab)
+	mux.HandleFunc("/api/terminal/", server.handleTerminal)
+	mux.HandleFunc("/api/terminal", server.handleTerminal) // Also handle without trailing slash
 
 	// Legacy static files (keep for backwards compatibility)
 	staticFS, _ := fs.Sub(staticFiles, "static")
