@@ -1,53 +1,143 @@
 # Kitty-Beads
 
-**Beads performance + Spec Kitty aesthetics**
+**Lightning-fast dev planning dashboard with Git-native issue tracking and terminal integration**
 
-A hybrid issue tracker combining [Beads](https://github.com/steveyegge/beads)' lightning-fast Go backend with [Spec Kitty](https://github.com/priivacy-ai/spec-kitty)'s beautiful dashboard UI.
+Kitty-Beads combines the **sub-100ms query performance** of [Beads](https://github.com/steveyegge/beads) with a beautiful React dashboard for team planning. Everything lives in Git—no external databases, no merge conflicts.
 
-## Features
+Perfect for:
+- **AI-assisted teams** - CLI + REST API + visual dashboard in one binary
+- **Distributed teams** - Issues stored in Git, sync like code
+- **High-velocity development** - Fast queries, instant feedback, zero context switching
 
-- **Fast**: Sub-100ms queries via SQLite cache
-- **Git-native**: Issues stored as JSONL, version-controlled like code
-- **Hash-based IDs**: No merge conflicts (`bd-a1b2` format)
-- **Visual Kanban**: Drag-drop lanes (Planned / Doing / Review / Done)
-- **Markdown rendering**: Rich issue descriptions with syntax highlighting
-- **Real-time updates**: Dashboard auto-refreshes every 5 seconds
-- **Dependency graph**: Track blockers and relationships
+## Core Features
+
+### 🚀 Performance
+- **Sub-100ms queries** - SQLite + intelligent caching
+- **Single binary deployment** - Everything embedded (Go server + React frontend)
+- **No external services** - Entirely self-contained
+
+### 📋 Development Planning
+- **Visual Kanban** - Drag-drop lanes (Planned / In Progress / Review / Done)
+- **Feature tracking** - Epics with child tasks, blockers, and dependencies
+- **Rich artifacts** - Design docs, specifications, research notes, checklists
+- **Priority levels** - 5-tier priority system with visual indicators
+
+### 🔗 Git-Native Design
+- **Issues as code** - Stored in `.beads/issues.jsonl`, versioned with Git
+- **No merge conflicts** - Hash-based IDs (`bd-a1b2` format) + intelligent conflict resolution
+- **Offline-first** - Works without network, syncs when you push
+
+### 💻 Terminal Integration
+- **In-browser shell** - Full PTY bash/zsh via WebSocket
+- **Run Beads CLI** - `bd create`, `bd list`, `bd sync` from dashboard
+- **Real-time sync** - Dashboard updates reflect terminal changes instantly
+
+### 🎨 Modern UI
+- **React 19 + Vite** - Fast builds, hot reload in dev
+- **Tailwind CSS** - Responsive design that works on any screen
+- **Markdown rendering** - Rich text with syntax highlighting
+- **Real-time updates** - Auto-refreshing data with 1-second cache
 
 ## Quick Start
 
+### Install (One-liner)
 ```bash
-# Build the server
-make build
+curl -sSL https://raw.githubusercontent.com/AkimZmerli/kitty-beads/main/install.sh | bash
+```
 
-# Start the dashboard
-make run
+Then:
+```bash
+cd your-project && bd init  # if first time
+kitty-beads                 # opens http://localhost:8080
+```
 
-# Open http://localhost:8080
+### Or Manual Build
+```bash
+git clone https://github.com/AkimZmerli/kitty-beads
+cd kitty-beads
+make build && ./bin/kitty-beads
 ```
 
 ## Requirements
 
-- Go 1.24+
-- Existing `.beads` directory (run `bd init` first)
+- **Go 1.24+** (if building locally)
+- **Existing `.beads` directory** - Create one with: `bd init`
+- **Node.js 18+** (only needed for frontend development)
 
 ## Architecture
 
 ```
-kitty-beads/
-├── src/
-│   ├── cmd/
-│   │   ├── bd/           # Original Beads CLI
-│   │   └── server/       # REST API + Dashboard server
-│   │       ├── main.go
-│   │       ├── templates/
-│   │       │   └── index.html
-│   │       └── static/
-│   │           └── dashboard/
-│   │               ├── dashboard.css
-│   │               └── dashboard.js
-│   └── internal/         # Beads core (storage, types, etc.)
-└── Makefile
+kitty-beads (single binary)
+│
+├── HTTP Server (Go, port 8080)
+│   ├── /api/features        - List epics with stats
+│   ├── /api/kanban/{id}     - Kanban lanes for feature
+│   ├── /api/issues          - CRUD for issues
+│   ├── /api/ready           - Ready-to-work issues
+│   ├── /api/artifact/*      - Design docs, specs, etc.
+│   ├── /api/diagnostics     - System stats
+│   ├── /api/terminal        - WebSocket PTY shell
+│   └── /                    - React SPA dashboard
+│
+├── Storage Backend
+│   ├── SQLite (.beads/beads.db)     - Fast queries, WAL mode
+│   ├── JSONL (.beads/issues.jsonl)  - Git version control
+│   └── Git hooks                     - Auto-sync on commit
+│
+└── Frontend (React 19 + Tailwind)
+    ├── Overview         - Feature dashboard & stats
+    ├── Kanban           - Visual board with lanes
+    ├── Tasks            - List view of work
+    ├── Plan/Spec/Research - Artifact editors
+    ├── Terminal         - Full-screen bash shell
+    └── Diagnostics      - Health & statistics
+```
+
+### Data Flow
+1. **Dashboard loads** → Fetches issues from `/api/issues`
+2. **Update issue** → PUT `/api/issues/{id}` → Syncs to JSONL
+3. **Terminal command** → WebSocket to PTY → Executes `bd sync`
+4. **Git push** → Hook triggers → SQLite cache refreshed
+5. **Refresh dashboard** → 1-second cache miss → Latest data
+
+## Usage
+
+### Command-Line Options
+
+```bash
+kitty-beads [OPTIONS]
+
+Options:
+  -port PORT         HTTP server port (default: 8080)
+  -beads-dir PATH    Path to .beads directory (default: .beads)
+  -open              Automatically open dashboard in browser
+```
+
+### Examples
+
+```bash
+# Start on default port (8080)
+kitty-beads
+
+# Use custom port
+kitty-beads -port 3000
+
+# Point to different .beads directory
+kitty-beads -beads-dir /path/to/.beads
+
+# Auto-open browser on start
+kitty-beads -open
+
+# Combine options
+kitty-beads -port 3000 -open
+```
+
+### Accessing from Remote
+
+```bash
+# Listen on all interfaces (careful with security)
+kitty-beads -port 3000
+# Then access from other machines: http://your-ip:3000
 ```
 
 ## API Endpoints

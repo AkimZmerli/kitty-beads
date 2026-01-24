@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -45,7 +46,16 @@ type TerminalSession struct {
 }
 
 // handleTerminal handles WebSocket connections for the terminal
+// Supports session IDs in URL: /api/terminal/{sessionId}
 func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
+	// Extract session ID from URL path (optional, for multi-tab support)
+	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/terminal"), "/")
+	sessionID := ""
+	if len(parts) > 1 && parts[1] != "" {
+		sessionID = parts[1]
+	}
+	_ = sessionID // Session ID available for future session management
+
 	// Upgrade HTTP connection to WebSocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

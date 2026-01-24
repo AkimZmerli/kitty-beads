@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTerminal } from '../context/TerminalContext';
 import type { Feature } from '../types/api';
 
 interface HeaderProps {
@@ -6,7 +7,6 @@ interface HeaderProps {
   currentFeature: string | null;
   projectPath: string;
   onFeatureChange: (featureId: string) => void;
-  onToggleTerminal?: () => void;
 }
 
 // Sketch-style cat icon SVG
@@ -45,7 +45,8 @@ function CatLogo() {
   );
 }
 
-export function Header({ features, currentFeature, projectPath, onFeatureChange, onToggleTerminal }: HeaderProps) {
+export function Header({ features, currentFeature, projectPath, onFeatureChange }: HeaderProps) {
+  const { togglePanel, isOpen } = useTerminal();
   const lastUpdate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
@@ -85,16 +86,16 @@ export function Header({ features, currentFeature, projectPath, onFeatureChange,
 
       <div className="flex items-center gap-5">
         {/* Terminal Button */}
-        {onToggleTerminal && (
-          <button
-            onClick={onToggleTerminal}
-            className="flex items-center gap-2 px-4 py-2 bg-terminal-bg text-terminal-text border border-terminal-border rounded-md hover:border-grassy-green transition-colors"
-            title="Toggle Terminal (Ctrl+`)"
-          >
-            <span>⌨️</span>
-            <span>Terminal</span>
-          </button>
-        )}
+        <button
+          onClick={togglePanel}
+          className={`flex items-center gap-2 px-4 py-2 bg-terminal-bg text-terminal-text border rounded-md transition-colors ${
+            isOpen ? 'border-grassy-green' : 'border-terminal-border hover:border-grassy-green'
+          }`}
+          title="Toggle Terminal (Ctrl+`)"
+        >
+          <span className="text-sm font-mono">&gt;_</span>
+          <span>Terminal</span>
+        </button>
 
         {/* Constitution Button */}
         <Link

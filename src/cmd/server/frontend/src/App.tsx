@@ -12,7 +12,7 @@ import { Quickstart } from "./pages/Quickstart";
 import { DataModel } from "./pages/DataModel";
 import { Constitution } from "./pages/Constitution";
 import { Diagnostics } from "./pages/Diagnostics";
-import { TerminalPage } from "./pages/TerminalPage";
+import { TerminalProvider } from "./context/TerminalContext";
 import { useFeatures } from "./hooks/useFeatures";
 
 const queryClient = new QueryClient({
@@ -78,7 +78,6 @@ function AppContent() {
         />
         <Route path="/constitution" element={<Constitution />} />
         <Route path="/diagnostics" element={<Diagnostics />} />
-        <Route path="/terminal" element={<TerminalPage />} />
       </Route>
     </Routes>
   );
@@ -88,7 +87,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppContent />
+        <TerminalProvider>
+          <AppContent />
+        </TerminalProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
