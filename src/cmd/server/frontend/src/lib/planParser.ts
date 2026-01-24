@@ -43,7 +43,7 @@ export function parsePlan(markdown: string | undefined | null): ParsedPlan {
  * Extract the first paragraph as a summary
  * Stops at first blank line, heading, or list
  */
-function extractSummary(content: string): string {
+export function extractSummary(content: string): string {
   const lines = content.split("\n");
   const summaryLines: string[] = [];
 

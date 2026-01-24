@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useRoadmap } from "../hooks/useRoadmap";
 import { BeadCard } from "../components/roadmap/BeadCard";
 import { MarkdownViewer } from "../components/MarkdownViewer";
@@ -6,14 +7,13 @@ import { getIssue } from "../lib/api";
 import type { Issue } from "../types/api";
 
 export function Roadmap() {
+  const navigate = useNavigate();
   const { data, isLoading, error } = useRoadmap();
   const [viewingIssue, setViewingIssue] = useState<Issue | null>(null);
   const [loadingIssue, setLoadingIssue] = useState(false);
 
   const handleEditPlan = (issueId: string) => {
-    // TODO: Navigate to Ideation Pad (Phase 2)
-    console.log("Edit plan for:", issueId);
-    alert(`Edit Plan: ${issueId}\n\nIdeation Pad coming in Phase 2!`);
+    navigate(`/ideation/${issueId}`);
   };
 
   const handleViewFull = async (issueId: string) => {

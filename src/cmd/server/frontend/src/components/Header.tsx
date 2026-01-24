@@ -50,7 +50,7 @@ export function Header({ features, currentFeature, projectPath, onFeatureChange 
   const lastUpdate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
-    <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-8 py-4 bg-white border-b border-border">
       <div className="flex items-center gap-8">
         {/* Logo Section */}
         <div className="flex items-center gap-4">
