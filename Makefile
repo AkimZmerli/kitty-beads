@@ -16,13 +16,16 @@ run: build
 	@echo "Starting kitty-beads server..."
 	./bin/kitty-beads -port 8080
 
-# Run in development mode with hot reload frontend
+# Run in development mode
 dev:
-	@echo "Starting development servers..."
-	@echo "Backend: http://localhost:8080 (API)"
-	@echo "Frontend: http://localhost:5173 (dev server)"
-	@cd src && go run ./cmd/server -port 8080 & \
-	cd src/cmd/server/frontend && npm run dev
+	@echo "Starting server on http://localhost:8080"
+	cd src && go run ./cmd/server -port 8080
+
+# Build frontend (run after making frontend changes)
+build-frontend:
+	@echo "Building frontend..."
+	cd src/cmd/server/frontend && npm run build
+	@echo "Done! Refresh http://localhost:8080"
 
 # Install dependencies
 deps:
@@ -66,8 +69,8 @@ help:
 	@echo "  make deps      - Download dependencies"
 	@echo "  make tidy      - Tidy Go modules"
 	@echo "  make test      - Run tests"
+	@echo "  make build-frontend - Rebuild frontend after changes"
 	@echo "  make clean     - Remove build artifacts"
 	@echo "  make help      - Show this help"
 	@echo ""
-	@echo "Production: http://localhost:8080"
-	@echo "Development: http://localhost:5173 (with hot reload)"
+	@echo "Server runs on http://localhost:8080"

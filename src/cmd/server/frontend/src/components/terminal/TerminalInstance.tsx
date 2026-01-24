@@ -86,6 +86,11 @@ export const TerminalInstance = forwardRef<TerminalInstanceHandle, TerminalInsta
       wsRef.current = ws;
 
       ws.onopen = () => {
+        // Clear any pending reconnect timeout
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
         xtermRef.current?.write('\x1b[32mConnected to terminal\x1b[0m\r\n');
         // Send initial size
         if (fitAddonRef.current && xtermRef.current) {
