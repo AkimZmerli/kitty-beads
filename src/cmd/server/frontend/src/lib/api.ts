@@ -67,6 +67,17 @@ export async function getAllIssues(): Promise<Issue[]> {
   return fetchJson<Issue[]>(`${API_BASE}/issues`);
 }
 
+export async function updateIssue(
+  issueId: string,
+  updates: Partial<Issue>,
+): Promise<Issue> {
+  return fetchJson<Issue>(`${API_BASE}/issues/${issueId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
+}
+
 // Constitution API
 export async function getConstitution(): Promise<string> {
   return fetchText(`${API_BASE}/constitution`);

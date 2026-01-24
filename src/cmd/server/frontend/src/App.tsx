@@ -13,6 +13,7 @@ import { DataModel } from "./pages/DataModel";
 import { Constitution } from "./pages/Constitution";
 import { Diagnostics } from "./pages/Diagnostics";
 import { Roadmap } from "./pages/Roadmap";
+import { IdeationPad } from "./pages/IdeationPad";
 import { TerminalProvider } from "./context/TerminalContext";
 import { useFeatures } from "./hooks/useFeatures";
 
@@ -80,6 +81,7 @@ function AppContent() {
         <Route path="/constitution" element={<Constitution />} />
         <Route path="/diagnostics" element={<Diagnostics />} />
         <Route path="/roadmap" element={<Roadmap />} />
+        <Route path="/ideation/:issueId" element={<IdeationPad />} />
       </Route>
     </Routes>
   );

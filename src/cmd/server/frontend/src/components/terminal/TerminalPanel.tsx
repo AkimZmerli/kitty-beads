@@ -72,7 +72,7 @@ export function TerminalPanel() {
 
   return (
     <div
-      className="bg-[#1e1e1e] border-t border-[#3c3c3c] flex flex-col"
+      className="bg-[#1e1e1e] border-t border-[#3c3c3c] flex flex-col overflow-hidden"
       style={panelStyle}
     >
       {/* Resize handle (only when not fullscreen) */}

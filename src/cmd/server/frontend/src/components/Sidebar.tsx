@@ -65,11 +65,17 @@ function SidebarSection({ title }: { title: string }) {
   );
 }
 
+// Header height constant (must match Header component)
+const HEADER_HEIGHT = 73; // px - approximately py-4 + content
+
 export function Sidebar({ currentFeature }: SidebarProps) {
   const artifacts = currentFeature?.artifacts || {};
 
   return (
-    <aside className="w-56 bg-sidebar-bg border-r border-border py-5">
+    <aside
+      className="fixed left-0 bottom-0 w-56 bg-sidebar-bg border-r border-border py-5 overflow-y-auto z-20"
+      style={{ top: `${HEADER_HEIGHT}px` }}
+    >
       <SidebarSection title="Workflow" />
       <NavItem to="/" icon="📊" label="Overview" />
       <NavItem to="/roadmap" icon="🗺️" label="Roadmap" />

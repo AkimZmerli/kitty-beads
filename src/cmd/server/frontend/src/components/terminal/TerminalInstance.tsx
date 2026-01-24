@@ -248,10 +248,10 @@ export const TerminalInstance = forwardRef<TerminalInstanceHandle, TerminalInsta
 
     return (
       <div
-        className="h-full w-full bg-[#1e1e1e] p-2"
+        className="h-full w-full bg-[#1e1e1e] p-2 overflow-hidden"
         style={{ display: isActive ? 'block' : 'none' }}
       >
-        <div ref={terminalRef} className="h-full w-full" />
+        <div ref={terminalRef} className="h-full w-full overflow-hidden" />
       </div>
     );
   }
