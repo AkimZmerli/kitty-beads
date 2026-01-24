@@ -63,6 +63,10 @@ export async function getIssue(issueId: string): Promise<Issue> {
   return fetchJson<Issue>(`${API_BASE}/issues/${issueId}`);
 }
 
+export async function getAllIssues(): Promise<Issue[]> {
+  return fetchJson<Issue[]>(`${API_BASE}/issues`);
+}
+
 // Constitution API
 export async function getConstitution(): Promise<string> {
   return fetchText(`${API_BASE}/constitution`);

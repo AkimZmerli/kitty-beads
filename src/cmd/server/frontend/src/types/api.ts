@@ -69,6 +69,15 @@ export interface Issue {
   acceptance_criteria?: string;
   created_at?: string;
   updated_at?: string;
+  issue_type?: "epic" | "task" | "bug" | "story";
+  owner?: string;
+}
+
+// Roadmap types
+export interface RoadmapIssue extends Issue {
+  children?: RoadmapIssue[];
+  isBlocked?: boolean;
+  blockers?: string[];
 }
 
 export interface DiagnosticsResponse {

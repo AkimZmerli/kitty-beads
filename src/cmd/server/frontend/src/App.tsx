@@ -12,6 +12,7 @@ import { Quickstart } from "./pages/Quickstart";
 import { DataModel } from "./pages/DataModel";
 import { Constitution } from "./pages/Constitution";
 import { Diagnostics } from "./pages/Diagnostics";
+import { Roadmap } from "./pages/Roadmap";
 import { TerminalProvider } from "./context/TerminalContext";
 import { useFeatures } from "./hooks/useFeatures";
 
@@ -78,6 +79,7 @@ function AppContent() {
         />
         <Route path="/constitution" element={<Constitution />} />
         <Route path="/diagnostics" element={<Diagnostics />} />
+        <Route path="/roadmap" element={<Roadmap />} />
       </Route>
     </Routes>
   );

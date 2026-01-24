@@ -72,6 +72,7 @@ export function Sidebar({ currentFeature }: SidebarProps) {
     <aside className="w-56 bg-sidebar-bg border-r border-border py-5">
       <SidebarSection title="Workflow" />
       <NavItem to="/" icon="📊" label="Overview" />
+      <NavItem to="/roadmap" icon="🗺️" label="Roadmap" />
       <NavItem to="/specify" icon="📄" label="Specify" showCheck isComplete={artifacts.spec} />
       <NavItem to="/plan" icon="📋" label="Plan" showCheck isComplete={artifacts.plan} />
       <NavItem to="/tasks" icon="📝" label="Tasks" showCheck isComplete={artifacts.tasks} />
