@@ -18,14 +18,6 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return response.json();
 }
 
-async function fetchText(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status} ${response.statusText}`);
-  }
-  return response.text();
-}
-
 // Features API
 export async function getFeatures(): Promise<FeaturesResponse> {
   return fetchJson<FeaturesResponse>(`${API_BASE}/features`);
@@ -76,11 +68,6 @@ export async function updateIssue(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
-}
-
-// Constitution API
-export async function getConstitution(): Promise<string> {
-  return fetchText(`${API_BASE}/constitution`);
 }
 
 // Diagnostics API

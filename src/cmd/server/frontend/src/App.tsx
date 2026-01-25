@@ -10,7 +10,6 @@ import { Kanban } from "./pages/Kanban";
 import { Research } from "./pages/Research";
 import { Quickstart } from "./pages/Quickstart";
 import { DataModel } from "./pages/DataModel";
-import { Constitution } from "./pages/Constitution";
 import { Diagnostics } from "./pages/Diagnostics";
 import { Roadmap } from "./pages/Roadmap";
 import { IdeationPad } from "./pages/IdeationPad";
@@ -78,7 +77,6 @@ function AppContent() {
           path="/data-model"
           element={<DataModel featureId={featureId} />}
         />
-        <Route path="/constitution" element={<Constitution />} />
         <Route path="/diagnostics" element={<Diagnostics />} />
         <Route path="/roadmap" element={<Roadmap />} />
         <Route path="/ideation/:issueId" element={<IdeationPad />} />

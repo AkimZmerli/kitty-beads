@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MarkdownViewer } from "./MarkdownViewer";
 import { useArtifact, useSaveArtifact } from "../hooks/useArtifact";
+import { Pencil } from "lucide-react";
 
 interface EditableArtifactProps {
   featureId: string | null;
@@ -41,8 +42,8 @@ export function EditableArtifact({
 
   if (!featureId) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-        <h2 className="text-grassy-green text-2xl font-bold mb-4">{title}</h2>
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+        <h2 className="text-neon-cyan text-2xl font-bold mb-4 drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">{title}</h2>
         <p className="text-text-muted text-center py-8">
           Select a feature to view its {title.toLowerCase()}.
         </p>
@@ -52,8 +53,8 @@ export function EditableArtifact({
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-        <h2 className="text-grassy-green text-2xl font-bold mb-4">{title}</h2>
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+        <h2 className="text-neon-cyan text-2xl font-bold mb-4 drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">{title}</h2>
         <p className="text-text-muted text-center py-8">Loading...</p>
       </div>
     );
@@ -61,9 +62,9 @@ export function EditableArtifact({
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
-        <h2 className="text-grassy-green text-2xl font-bold mb-4">{title}</h2>
-        <p className="text-red-500 text-center py-8">Error loading content</p>
+      <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
+        <h2 className="text-neon-cyan text-2xl font-bold mb-4 drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">{title}</h2>
+        <p className="text-neon-pink text-center py-8">Error loading content</p>
       </div>
     );
   }
@@ -72,15 +73,15 @@ export function EditableArtifact({
   const defaultEmpty = `No ${artifactType.replace("_", " ")} content yet.`;
 
   return (
-    <div className="bg-white rounded-xl p-8 border-2 border-sunny-yellow-border">
+    <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-grassy-green text-2xl font-bold">{title}</h2>
+        <h2 className="text-neon-cyan text-2xl font-bold drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">{title}</h2>
         {editable && !isEditing && (
           <button
             onClick={handleEdit}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-border-light rounded-md text-text-secondary transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-night-surface hover:bg-night-surface-bright border border-night-border rounded-md text-text-secondary transition-colors"
           >
-            <span>&#9998;</span> Edit
+            <Pencil className="w-4 h-4" /> Edit
           </button>
         )}
       </div>
@@ -90,19 +91,19 @@ export function EditableArtifact({
           <textarea
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
-            className="w-full min-h-[400px] p-4 border-2 border-border-light rounded-lg font-mono text-sm leading-relaxed resize-y focus:outline-none focus:border-grassy-green"
+            className="w-full min-h-[400px] p-4 border border-night-border rounded-lg font-mono text-sm leading-relaxed resize-y bg-night-surface text-text-primary focus:outline-none focus:border-neon-cyan placeholder:text-text-muted"
           />
           <div className="flex justify-end gap-3 mt-4">
             <button
               onClick={handleCancel}
-              className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 border border-border-light rounded-md text-text-secondary transition-colors"
+              className="px-5 py-2.5 bg-night-surface hover:bg-night-surface-bright border border-night-border rounded-md text-text-secondary transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saveMutation.isPending}
-              className="px-5 py-2.5 bg-grassy-green hover:bg-grassy-green-dark text-white rounded-md font-semibold transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-neon-cyan hover:shadow-[0_0_12px_rgba(125,207,255,0.4)] text-night-bg rounded-md font-semibold transition-all disabled:opacity-50"
             >
               {saveMutation.isPending ? "Saving..." : "Save Changes"}
             </button>

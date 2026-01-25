@@ -38,13 +38,13 @@ export function TerminalTabs({
               group flex items-center gap-2 px-3 py-1 text-sm rounded-t
               transition-colors duration-150
               ${activeTabId === tab.id
-                ? 'bg-[#1e1e1e] text-white border-t-2 border-grassy-green'
+                ? 'bg-[#1e1e1e] text-white border-t-2 border-[#7dcfff]'
                 : 'text-[#969696] hover:text-white hover:bg-[#2d2d2d]'
               }
             `}
           >
             {/* Terminal icon for tab */}
-            <span className="text-xs opacity-70">&#62;_</span>
+            <span className={`text-xs ${activeTabId === tab.id ? 'text-[#7dcfff]' : 'opacity-70'}`}>&#62;_</span>
             <span>{tab.title}</span>
             {/* Close button */}
             <button
@@ -68,7 +68,7 @@ export function TerminalTabs({
         {/* Add tab button */}
         <button
           onClick={onAddTab}
-          className="w-6 h-6 flex items-center justify-center text-[#969696] hover:text-white hover:bg-[#2d2d2d] rounded transition-colors"
+          className="w-6 h-6 flex items-center justify-center text-[#969696] hover:text-[#7dcfff] hover:bg-[#2d2d2d] rounded transition-colors"
           title="New Terminal"
         >
           <span className="text-lg">+</span>
@@ -80,7 +80,7 @@ export function TerminalTabs({
         {/* Fullscreen toggle */}
         <button
           onClick={onToggleFullscreen}
-          className="w-7 h-7 flex items-center justify-center text-[#969696] hover:text-white hover:bg-[#2d2d2d] rounded transition-colors"
+          className="w-7 h-7 flex items-center justify-center text-[#969696] hover:text-[#7dcfff] hover:bg-[#2d2d2d] rounded transition-colors"
           title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
         >
           {isFullscreen ? (
