@@ -6,20 +6,100 @@
 - Maintainability: Reduced coupling, clearer feature boundaries
 - Performance/Deployment: Enable independent feature work
 
+---
+
+## Migration Status Summary (Updated 2026-01-26)
+
+### Overall Progress
+
+| Phase | Description | Status | Notes |
+|-------|-------------|--------|-------|
+| Phase 0 | Cleanup | ✅ Done | `beads-upstream/`, `spec-kitty-upstream/` deleted |
+| Phase 1 | Infrastructure Foundation | ✅ Done | `shared/middleware/` created (172 LOC) |
+| Phase 2 | Storage Interface Split | 🔶 Partial | `shared/storage/adapter.go` (323 LOC) |
+| Phase 3-4 | Backend Vertical Slices | 🔶 Scaffolded | `features/` structure exists (5,489 LOC) |
+| Phase 5 | CLI Reorganization | 🔶 80% Done | 8/10 feature packages migrated |
+| Phase 6 | Frontend Vertical Slices | ⏳ Not started | |
+| Phase 7 | Final Cleanup | ⏳ Not started | |
+
+### Phase 5 CLI Status (Primary Focus)
+
+| Feature | Status | LOC |
+|---------|--------|-----|
+| labels | ✅ Done | Full migration |
+| comments | ✅ Done | Full migration |
+| epics | ✅ Done | Full migration |
+| gates | ✅ Done | Full migration |
+| dependencies | ✅ Done | Full migration |
+| config | ✅ Done | Full migration |
+| admin | ✅ Done | Command group only |
+| molecules | ✅ Done | ~6,000 LOC migrated |
+| **sync** | ⏳ Pending | Large, complex deps |
+| **issues** | ⏳ Pending | Core commands |
+
+### Key Metrics
+
+- **322 .go files** remain in `cmd/bd/` root (main package)
+- **~6,000 LOC** migrated to `commands/molecules/`
+- **~5,500 LOC** scaffolded in `features/` (backend vertical slices)
+- **172 LOC** in `shared/middleware/` (logger, recovery, request_id)
+- **323 LOC** in `shared/storage/adapter.go`
+
+### Current Directory Structure
+
+```
+src/
+├── cmd/bd/
+│   ├── commands/           # Migrated CLI packages
+│   │   ├── admin/          ✅
+│   │   ├── comments/       ✅
+│   │   ├── config/         ✅
+│   │   ├── dependencies/   ✅
+│   │   ├── epics/          ✅
+│   │   ├── gates/          ✅
+│   │   ├── labels/         ✅
+│   │   ├── molecules/      ✅ (~6,000 LOC)
+│   │   └── shared/template/
+│   └── *.go                # 322 files still in main package
+├── features/               # Backend vertical slices (scaffolded)
+│   ├── comments/           handler.go, repository.go, service.go, types.go
+│   ├── compaction/
+│   ├── dependencies/
+│   ├── epics/
+│   ├── export/
+│   ├── gates/
+│   ├── issues/             + rpc.go
+│   ├── kanban/
+│   ├── labels/
+│   └── statistics/
+└── shared/
+    ├── middleware/         logger.go, recovery.go, request_id.go
+    └── storage/            adapter.go
+```
+
+### Next Steps
+
+1. **Phase 5 completion**: Migrate `sync` and `issues` CLI commands
+2. **Phase 3-4 completion**: Wire up scaffolded `features/` with actual business logic
+3. **Phase 6**: Frontend vertical slices
+4. **Phase 7**: Final cleanup and dead code removal
+
+---
+
 ## Current Pain Points
 
 **Project Structure:**
 
-- 158MB bloat from `beads-upstream/` and `spec-kitty-upstream/` (to be deleted)
-- 360 subdirectories in `src/cmd/bd/` - extreme width for CLI
+- ~~158MB bloat from `beads-upstream/` and `spec-kitty-upstream/`~~ ✅ DELETED
+- 322 files still in `src/cmd/bd/` root - needs further migration (sync, issues)
 - 11 levels of nesting in Go packages
 
 **Backend:**
 
 - Monolithic `main.go` (659 lines) with manual path parsing
-- Storage interface with 45+ methods (SRP violation)
-- RPC layer: 14,866 LOC in horizontal layer
-- No middleware (logging, auth, validation)
+- Storage interface with 45+ methods (SRP violation) - adapter.go started
+- RPC layer: 14,866 LOC in horizontal layer - features/ scaffolded
+- ~~No middleware~~ ✅ DONE (shared/middleware: logger, recovery, request_id)
 
 **Frontend:**
 
@@ -231,7 +311,7 @@ cmd/bd/commands/
 ├── labels/      # label add, label remove ✅ DONE
 ├── comments/    # comment add, comment list ✅ DONE
 ├── gates/       # gate create, gate show, gate wait ✅ DONE
-├── molecules/   # mol create, mol pour, wisp 🔶 PARTIAL (cmd group done)
+├── molecules/   # mol create, mol pour, wisp ✅ DONE
 ├── epics/       # epic status ✅ DONE
 ├── compaction/  # compact
 ├── export/      # flush, import
@@ -251,11 +331,11 @@ cmd/bd/commands/
 | dependencies | ✅ Done | Full migration, includes relate/unrelate |
 | config       | ✅ Done | Full migration |
 | admin        | ✅ Done | Command group only; cleanup/compact/reset stay in main due to complex deps |
-| molecules    | 🔶 Partial | Command group migrated; subcommands remain in main (~4200 LOC) |
+| molecules    | ✅ Done | Full migration - all subcommands in commands/molecules/ |
 | sync         | ⏳ Pending | Large, complex dependencies |
 | issues       | ⏳ Pending | Core commands, may stay in main |
 
-**Molecules Migration - Partial (Phase 1 Complete):**
+**Molecules Migration - Complete:**
 
 Phase 1 (Complete):
 - ✅ Created `commands/shared/template/` package with types and functions
@@ -273,18 +353,17 @@ Phase 2 (Complete):
 - ✅ `pour.go` → `commands/molecules/pour.go` (persistent mol spawning)
 - ✅ `wisp.go` → `commands/molecules/wisp.go` (ephemeral wisp management)
 
-Phase 3 (Remaining - ~1600 LOC):
-Remaining subcommand files:
-- `mol_burn.go`, `mol_current.go`, `mol_distill.go`, `mol_progress.go`
-- `mol_ready_gated.go`, `mol_seed.go`, `mol_squash.go`, `mol_stale.go`
+Phase 3 (Complete):
+- ✅ `mol_burn.go` → `commands/molecules/burn.go`
+- ✅ `mol_current.go` → `commands/molecules/current.go`
+- ✅ `mol_distill.go` → `commands/molecules/distill.go`
+- ✅ `mol_progress.go` → `commands/molecules/progress.go`
+- ✅ `mol_ready_gated.go` → `commands/molecules/ready_gated.go`
+- ✅ `mol_seed.go` → `commands/molecules/seed.go`
+- ✅ `mol_squash.go` → `commands/molecules/squash.go`
+- ✅ `mol_stale.go` → `commands/molecules/stale.go`
 
-Migration order (suggested):
-1. ~~cook.go (formula cooking infrastructure)~~ ✅ DONE
-2. ~~mol_bond.go (bonding operations)~~ ✅ DONE
-3. ~~pour.go, wisp.go (spawn commands)~~ ✅ DONE
-4. Remaining mol_*.go files
-
-Files in main already updated to use `molcmd.` imports for cook functions.
+All mol_*.go files from main have been migrated to commands/molecules/.
 
 **Migration Pattern:**
 ```go
@@ -315,18 +394,9 @@ func Register(root *cobra.Command) {
 
 ### Handoff Summary (Updated 2026-01-26)
 
-**What Was Done:**
-1. Created `commands/shared/template/` package (~300 LOC) - types and functions for template operations
-2. Created `commands/molecules/` package with:
-   - `molecules.go` - command group, helpers, Register()
-   - `show.go` - mol show with parallel analysis (~500 LOC)
-   - `cook.go` - formula cooking infrastructure (~1060 LOC)
-   - `bond.go` - polymorphic bonding operations (~640 LOC)
-   - `pour.go` - persistent mol spawning (~260 LOC)
-   - `wisp.go` - ephemeral wisp management (~520 LOC)
-3. Updated `template.go` in main to use type aliases and delegation
-4. Updated dependent files in main (`mol_seed.go`, etc.) to use `molcmd.` imports
-5. All tests passing, build clean
+**Molecules Migration - COMPLETE**
+
+All mol_*.go files have been migrated from `cmd/bd/` to `cmd/bd/commands/molecules/`.
 
 **Current Structure:**
 ```
@@ -338,13 +408,21 @@ src/cmd/bd/commands/
 ├── epics/        ✅ Done
 ├── gates/        ✅ Done
 ├── labels/       ✅ Done
-├── molecules/    🔶 Partial
-│   ├── molecules.go  ✅
-│   ├── show.go       ✅
-│   ├── cook.go       ✅
-│   ├── bond.go       ✅
-│   ├── pour.go       ✅
-│   └── wisp.go       ✅
+├── molecules/    ✅ Done
+│   ├── molecules.go  - command group, helpers, Register()
+│   ├── show.go       - mol show with parallel analysis
+│   ├── cook.go       - formula cooking infrastructure
+│   ├── bond.go       - polymorphic bonding operations
+│   ├── pour.go       - persistent mol spawning
+│   ├── wisp.go       - ephemeral wisp management
+│   ├── burn.go       - molecule deletion
+│   ├── current.go    - current molecule state
+│   ├── distill.go    - molecule extraction
+│   ├── progress.go   - progress tracking
+│   ├── ready_gated.go - gated ready checks
+│   ├── seed.go       - molecule seeding
+│   ├── squash.go     - molecule squashing
+│   └── stale.go      - stale molecule detection
 └── shared/
     ├── context.go
     ├── errors.go
@@ -354,27 +432,7 @@ src/cmd/bd/commands/
         └── variables.go
 ```
 
-**What Needs To Be Done (Remaining ~1600 LOC):**
-
-Migration order:
-1. ~~`mol_bond.go` (~600 LOC) - core bonding logic~~ ✅ DONE
-2. ~~`pour.go` + `wisp.go` (~500 LOC) - spawn commands~~ ✅ DONE
-3. Remaining mol_*.go files:
-   - `mol_burn.go`, `mol_current.go`, `mol_distill.go`
-   - `mol_progress.go`, `mol_ready_gated.go`, `mol_seed.go`
-   - `mol_squash.go`, `mol_stale.go`
-
-**Migration Pattern for Each File:**
-1. Create new file in `commands/molecules/` with `package molecules`
-2. Import `cli` and use `cliCtx := cli.Get()` for globals
-3. Import `template` from `commands/shared/template` for template functions
-4. Export functions that other files in main depend on (prefix with capital letter)
-5. Update `molecules.go` Register() to call the new registerXCmd() function
-6. Update any callers in main to use `molcmd.ExportedFunction`
-7. Delete old file from main
-8. Run `go build ./cmd/bd/...` and `go test ./cmd/bd/... -short` to verify
-
-**Key Exports Already Available in molcmd:**
+**Key Exports Available in molcmd:**
 - `ResolveAndCookFormulaWithVars` - formula loading and cooking
 - `CookFormulaToSubgraph`, `CookFormulaToSubgraphWithVars` - in-memory subgraph creation
 - `AnalyzeMoleculeParallel`, `ParallelInfo` - parallel step analysis
@@ -385,6 +443,8 @@ Migration order:
 - `SpawnMolecule`, `SpawnMoleculeWithOptions` - molecule spawning
 - `FormatTimeAgo` - human-readable time formatting
 - `WispListItem`, `WispListResult`, `WispGCResult` - wisp result types
+
+**Verification:** Build passes, all tests pass
 
 ---
 

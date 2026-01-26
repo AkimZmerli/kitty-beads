@@ -1529,7 +1529,7 @@ func TestFindParentMolecule(t *testing.T) {
 }
 
 // TestAdvanceToNextStep tests auto-advancing to next step
-func Testmolcmd.AdvanceToNextStep(t *testing.T) {
+func TestAdvanceToNextStep(t *testing.T) {
 	ctx := context.Background()
 	dbPath := t.TempDir() + "/test.db"
 	s, err := sqlite.New(ctx, dbPath)
