@@ -266,21 +266,22 @@ Phase 1 (Complete):
 - ✅ `mol.go` updated to use molecules package; subcommands use `molCmd.GetMolCmd()`
 - ✅ Backward compatibility maintained - all mol_*.go files work without changes
 
-Phase 2 (In Progress):
+Phase 2 (Complete):
 - ✅ `mol_show.go` → `commands/molecules/show.go` (migrated with exported parallel analysis)
 - ✅ `cook.go` → `commands/molecules/cook.go` (formula cooking infrastructure)
+- ✅ `mol_bond.go` → `commands/molecules/bond.go` (polymorphic bonding operations)
+- ✅ `pour.go` → `commands/molecules/pour.go` (persistent mol spawning)
+- ✅ `wisp.go` → `commands/molecules/wisp.go` (ephemeral wisp management)
 
-Phase 3 (Remaining - ~2700 LOC):
-Subcommand files now unblocked:
-- `pour.go`, `wisp.go` - now can be migrated (use molcmd.ResolveAndCookFormulaWithVars)
-- `mol_bond.go` - core bonding logic, uses molcmd
+Phase 3 (Remaining - ~1600 LOC):
+Remaining subcommand files:
 - `mol_burn.go`, `mol_current.go`, `mol_distill.go`, `mol_progress.go`
 - `mol_ready_gated.go`, `mol_seed.go`, `mol_squash.go`, `mol_stale.go`
 
 Migration order (suggested):
 1. ~~cook.go (formula cooking infrastructure)~~ ✅ DONE
-2. mol_bond.go (bonding operations)
-3. pour.go, wisp.go (spawn commands)
+2. ~~mol_bond.go (bonding operations)~~ ✅ DONE
+3. ~~pour.go, wisp.go (spawn commands)~~ ✅ DONE
 4. Remaining mol_*.go files
 
 Files in main already updated to use `molcmd.` imports for cook functions.
@@ -320,8 +321,11 @@ func Register(root *cobra.Command) {
    - `molecules.go` - command group, helpers, Register()
    - `show.go` - mol show with parallel analysis (~500 LOC)
    - `cook.go` - formula cooking infrastructure (~1060 LOC)
+   - `bond.go` - polymorphic bonding operations (~640 LOC)
+   - `pour.go` - persistent mol spawning (~260 LOC)
+   - `wisp.go` - ephemeral wisp management (~520 LOC)
 3. Updated `template.go` in main to use type aliases and delegation
-4. Updated dependent files in main (`pour.go`, `wisp.go`, `mol_bond.go`, `mol_seed.go`) to use `molcmd.` imports
+4. Updated dependent files in main (`mol_seed.go`, etc.) to use `molcmd.` imports
 5. All tests passing, build clean
 
 **Current Structure:**
@@ -337,7 +341,10 @@ src/cmd/bd/commands/
 ├── molecules/    🔶 Partial
 │   ├── molecules.go  ✅
 │   ├── show.go       ✅
-│   └── cook.go       ✅
+│   ├── cook.go       ✅
+│   ├── bond.go       ✅
+│   ├── pour.go       ✅
+│   └── wisp.go       ✅
 └── shared/
     ├── context.go
     ├── errors.go
@@ -347,11 +354,11 @@ src/cmd/bd/commands/
         └── variables.go
 ```
 
-**What Needs To Be Done (Remaining ~2700 LOC):**
+**What Needs To Be Done (Remaining ~1600 LOC):**
 
 Migration order:
-1. `mol_bond.go` (~600 LOC) - core bonding logic, uses molcmd
-2. `pour.go` + `wisp.go` (~500 LOC) - spawn commands, already using molcmd imports
+1. ~~`mol_bond.go` (~600 LOC) - core bonding logic~~ ✅ DONE
+2. ~~`pour.go` + `wisp.go` (~500 LOC) - spawn commands~~ ✅ DONE
 3. Remaining mol_*.go files:
    - `mol_burn.go`, `mol_current.go`, `mol_distill.go`
    - `mol_progress.go`, `mol_ready_gated.go`, `mol_seed.go`
@@ -373,6 +380,11 @@ Migration order:
 - `AnalyzeMoleculeParallel`, `ParallelInfo` - parallel step analysis
 - `MoleculeSubgraph`, `MoleculeLabel` - type aliases
 - `GetMolCmd()` - returns mol command for subcommand registration
+- `BondProtoMol`, `BondMolMol`, `BondProtoProto` - bonding operations
+- `IsProtoIssue`, `BondResult` - proto checking and result type
+- `SpawnMolecule`, `SpawnMoleculeWithOptions` - molecule spawning
+- `FormatTimeAgo` - human-readable time formatting
+- `WispListItem`, `WispListResult`, `WispGCResult` - wisp result types
 
 ---
 

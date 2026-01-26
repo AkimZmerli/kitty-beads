@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 	"github.com/steveyegge/beads/internal/hooks"
 	"github.com/steveyegge/beads/internal/rpc"
 	"github.com/steveyegge/beads/internal/types"
@@ -381,7 +382,7 @@ create, update, show, or close operation).`,
 		// Handle --continue flag
 		if continueFlag && len(resolvedIDs) == 1 && closedCount > 0 {
 			autoClaim := !noAuto
-			result, err := AdvanceToNextStep(ctx, store, resolvedIDs[0], autoClaim, actor)
+			result, err := molcmd.AdvanceToNextStep(ctx, store, resolvedIDs[0], autoClaim, actor)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: could not advance to next step: %v\n", err)
 			} else if result != nil {
@@ -393,7 +394,7 @@ create, update, show, or close operation).`,
 					})
 					return
 				}
-				PrintContinueResult(result)
+				molcmd.PrintContinueResult(result)
 			}
 		}
 

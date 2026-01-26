@@ -20,8 +20,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/steveyegge/beads/features/issues"
 	"github.com/steveyegge/beads/internal/storage/sqlite"
 	"github.com/steveyegge/beads/internal/types"
+	sharedstorage "github.com/steveyegge/beads/shared/storage"
+	"github.com/steveyegge/beads/shared/middleware"
 )
 
 //go:embed static/*
@@ -41,8 +44,9 @@ var (
 
 // Server holds the HTTP server state
 type Server struct {
-	store   *sqlite.SQLiteStorage
-	rootDir string
+	store        *sqlite.SQLiteStorage
+	rootDir      string
+	issueHandler *issues.HTTPHandler
 }
 
 // Lane represents a kanban lane with issues
@@ -113,9 +117,25 @@ func main() {
 	defer store.Close()
 
 	rootDir := filepath.Dir(beadsPath)
+
+	// Create storage adapter for vertical slice architecture
+	adapter := sharedstorage.NewAdapter(store)
+
+	// Create issues service with dependencies
+	issueService := issues.NewService(
+		adapter.Issues(),
+		store,
+		adapter.Labels(),
+		adapter.Dependencies(),
+	)
+
+	// Create HTTP handlers
+	issueHandler := issues.NewHTTPHandler(issueService)
+
 	server := &Server{
-		store:   store,
-		rootDir: rootDir,
+		store:        store,
+		rootDir:      rootDir,
+		issueHandler: issueHandler,
 	}
 
 	mux := http.NewServeMux()
@@ -123,9 +143,18 @@ func main() {
 	// API routes
 	mux.HandleFunc("/api/features", server.handleFeatures)
 	mux.HandleFunc("/api/kanban/", server.handleKanban)
-	mux.HandleFunc("/api/issues", server.handleIssues)
-	mux.HandleFunc("/api/issues/", server.handleIssue)
-	mux.HandleFunc("/api/ready", server.handleReadyWork)
+
+	// Issue routes - using vertical slice handlers
+	mux.HandleFunc("/api/issues/count", server.issueHandler.HandleCount)
+	mux.HandleFunc("/api/issues", server.handleIssuesRouter)
+	mux.HandleFunc("/api/issues/", server.handleIssueRouter)
+
+	// Work management routes - using vertical slice handlers
+	mux.HandleFunc("/api/ready", server.issueHandler.HandleReady)
+	mux.HandleFunc("/api/blocked", server.issueHandler.HandleBlocked)
+	mux.HandleFunc("/api/stale", server.issueHandler.HandleStale)
+	mux.HandleFunc("/api/stats", server.issueHandler.HandleStats)
+
 	mux.HandleFunc("/api/health", server.handleHealth)
 	mux.HandleFunc("/api/diagnostics", server.handleDiagnostics)
 	mux.HandleFunc("/api/artifact/", server.handleArtifact)
@@ -145,9 +174,16 @@ func main() {
 	// SPA fallback - serve index.html for all non-API routes
 	mux.HandleFunc("/", server.handleSPA(frontendFS))
 
+	// Apply middleware chain
+	handler := middleware.Chain(
+		middleware.RequestID(),
+		middleware.Logger(),
+		middleware.Recovery(),
+	)(mux)
+
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", *port),
-		Handler: mux,
+		Handler: handler,
 	}
 
 	// Graceful shutdown
@@ -443,91 +479,38 @@ func (s *Server) handleKanban(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, response)
 }
 
-func (s *Server) handleIssues(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
+// handleIssuesRouter routes /api/issues requests to the appropriate vertical slice handler
+func (s *Server) handleIssuesRouter(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		issues, err := s.store.SearchIssues(ctx, "", types.IssueFilter{})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		writeJSON(w, issues)
-
+		s.issueHandler.HandleList(w, r)
 	case http.MethodPost:
-		var issue types.Issue
-		if err := json.NewDecoder(r.Body).Decode(&issue); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if err := s.store.CreateIssue(ctx, &issue, "kitty-beads"); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-		writeJSON(w, issue)
-
+		s.issueHandler.HandleCreate(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
-func (s *Server) handleIssue(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	// Extract issue ID from path: /api/issues/{id}
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 4 {
-		http.Error(w, "Issue ID required", http.StatusBadRequest)
+// handleIssueRouter routes /api/issues/{id} requests to the appropriate vertical slice handler
+func (s *Server) handleIssueRouter(w http.ResponseWriter, r *http.Request) {
+	// Check if this is a close operation: /api/issues/{id}/close
+	if strings.HasSuffix(r.URL.Path, "/close") {
+		s.issueHandler.HandleClose(w, r)
 		return
 	}
-	issueID := strings.Join(parts[3:], "/")
 
 	switch r.Method {
 	case http.MethodGet:
-		issue, err := s.store.GetIssue(ctx, issueID)
-		if err != nil {
-			http.Error(w, "Issue not found", http.StatusNotFound)
-			return
-		}
-		writeJSON(w, issue)
-
-	case http.MethodPut:
-		var updates map[string]interface{}
-		if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if err := s.store.UpdateIssue(ctx, issueID, updates, "kitty-beads"); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		issue, _ := s.store.GetIssue(ctx, issueID)
-		writeJSON(w, issue)
-
+		s.issueHandler.HandleGet(w, r)
+	case http.MethodPut, http.MethodPatch:
+		s.issueHandler.HandleUpdate(w, r)
 	case http.MethodDelete:
-		if err := s.store.DeleteIssue(ctx, issueID); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-
+		s.issueHandler.HandleDelete(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
-func (s *Server) handleReadyWork(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	issues, err := s.store.GetReadyWork(ctx, types.WorkFilter{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	writeJSON(w, issues)
-}
 
 func (s *Server) handleDiagnostics(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

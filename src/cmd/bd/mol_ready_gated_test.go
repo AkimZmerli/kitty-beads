@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 	"github.com/steveyegge/beads/internal/storage/sqlite"
 	"github.com/steveyegge/beads/internal/types"
 )
@@ -95,7 +96,7 @@ func TestFindGateReadyMolecules_NoGates(t *testing.T) {
 	}
 
 	// Find gate-ready molecules
-	molecules, err := findGateReadyMolecules(ctx, store)
+	molecules, err := molcmd.FindGateReadyMolecules(ctx, store)
 	if err != nil {
 		t.Fatalf("findGateReadyMolecules failed: %v", err)
 	}
@@ -179,7 +180,7 @@ func TestFindGateReadyMolecules_ClosedGate(t *testing.T) {
 	}
 
 	// Find gate-ready molecules
-	molecules, err := findGateReadyMolecules(ctx, store)
+	molecules, err := molcmd.FindGateReadyMolecules(ctx, store)
 	if err != nil {
 		t.Fatalf("findGateReadyMolecules failed: %v", err)
 	}
@@ -274,7 +275,7 @@ func TestFindGateReadyMolecules_OpenGate(t *testing.T) {
 	}
 
 	// Find gate-ready molecules
-	molecules, err := findGateReadyMolecules(ctx, store)
+	molecules, err := molcmd.FindGateReadyMolecules(ctx, store)
 	if err != nil {
 		t.Fatalf("findGateReadyMolecules failed: %v", err)
 	}
@@ -354,7 +355,7 @@ func TestFindGateReadyMolecules_HookedMolecule(t *testing.T) {
 	}
 
 	// Find gate-ready molecules
-	molecules, err := findGateReadyMolecules(ctx, store)
+	molecules, err := molcmd.FindGateReadyMolecules(ctx, store)
 	if err != nil {
 		t.Fatalf("findGateReadyMolecules failed: %v", err)
 	}
@@ -434,7 +435,7 @@ func TestFindGateReadyMolecules_MultipleGates(t *testing.T) {
 	}
 
 	// Find gate-ready molecules
-	molecules, err := findGateReadyMolecules(ctx, store)
+	molecules, err := molcmd.FindGateReadyMolecules(ctx, store)
 	if err != nil {
 		t.Fatalf("findGateReadyMolecules failed: %v", err)
 	}

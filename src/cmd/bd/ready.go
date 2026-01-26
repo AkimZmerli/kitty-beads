@@ -32,7 +32,7 @@ This is useful for agents executing molecules to see which steps can run next.`,
 		// Handle --gated flag (gate-resume discovery)
 		gated, _ := cmd.Flags().GetBool("gated")
 		if gated {
-			runMolReadyGated(cmd, args)
+			molcmd.RunMolReadyGated(cmd, args)
 			return
 		}
 

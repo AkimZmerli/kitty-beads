@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 	"time"
+
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 )
 
 func TestTruncateString(t *testing.T) {
@@ -73,9 +75,9 @@ func TestFormatTimeAgo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := formatTimeAgo(tt.t)
+			got := molcmd.FormatTimeAgo(tt.t)
 			if got != tt.wantContains {
-				t.Errorf("formatTimeAgo() = %q, want %q", got, tt.wantContains)
+				t.Errorf("FormatTimeAgo() = %q, want %q", got, tt.wantContains)
 			}
 		})
 	}

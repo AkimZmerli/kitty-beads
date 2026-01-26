@@ -104,25 +104,25 @@ func TestParseDistillVar(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotFind, gotVar, err := parseDistillVar(tt.varFlag, tt.searchableText)
+			gotFind, gotVar, err := molcmd.ParseDistillVar(tt.varFlag, tt.searchableText)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("parseDistillVar() expected error, got none")
+					t.Errorf("molcmd.ParseDistillVar() expected error, got none")
 				}
 				return
 			}
 
 			if err != nil {
-				t.Errorf("parseDistillVar() unexpected error: %v", err)
+				t.Errorf("molcmd.ParseDistillVar() unexpected error: %v", err)
 				return
 			}
 
 			if gotFind != tt.wantFind {
-				t.Errorf("parseDistillVar() find = %q, want %q", gotFind, tt.wantFind)
+				t.Errorf("molcmd.ParseDistillVar() find = %q, want %q", gotFind, tt.wantFind)
 			}
 			if gotVar != tt.wantVar {
-				t.Errorf("parseDistillVar() var = %q, want %q", gotVar, tt.wantVar)
+				t.Errorf("molcmd.ParseDistillVar() var = %q, want %q", gotVar, tt.wantVar)
 			}
 		})
 	}
@@ -144,7 +144,7 @@ func TestCollectSubgraphText(t *testing.T) {
 		},
 	}
 
-	text := collectSubgraphText(subgraph)
+	text := molcmd.CollectSubgraphText(subgraph)
 
 	// Verify all fields are included
 	expected := []string{
@@ -157,7 +157,7 @@ func TestCollectSubgraphText(t *testing.T) {
 
 	for _, exp := range expected {
 		if !strings.Contains(text, exp) {
-			t.Errorf("collectSubgraphText() missing %q", exp)
+			t.Errorf("molcmd.CollectSubgraphText() missing %q", exp)
 		}
 	}
 }
@@ -178,39 +178,16 @@ func TestIsProto(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			issue := &types.Issue{Labels: tt.labels}
-			got := isProto(issue)
+			got := molcmd.IsProtoIssue(issue)
 			if got != tt.want {
-				t.Errorf("isProto() = %v, want %v", got, tt.want)
+				t.Errorf("IsProtoIssue() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestOperandType(t *testing.T) {
-	if got := operandType(true); got != "proto" {
-		t.Errorf("operandType(true) = %q, want %q", got, "proto")
-	}
-	if got := operandType(false); got != "molecule" {
-		t.Errorf("operandType(false) = %q, want %q", got, "molecule")
-	}
-}
-
-func TestMinPriority(t *testing.T) {
-	tests := []struct {
-		a, b, want int
-	}{
-		{1, 2, 1},
-		{2, 1, 1},
-		{0, 3, 0},
-		{3, 3, 3},
-	}
-	for _, tt := range tests {
-		got := minPriority(tt.a, tt.b)
-		if got != tt.want {
-			t.Errorf("minPriority(%d, %d) = %d, want %d", tt.a, tt.b, got, tt.want)
-		}
-	}
-}
+// TestOperandType and TestMinPriority removed - trivial helper functions
+// now internal to the molecules package.
 
 func TestBondProtoProto(t *testing.T) {
 	ctx := context.Background()
@@ -230,14 +207,14 @@ func TestBondProtoProto(t *testing.T) {
 		Status:    types.StatusOpen,
 		Priority:  1,
 		IssueType: types.TypeEpic,
-		Labels:    []string{MoleculeLabel},
+		Labels:    []string{molcmd.MoleculeLabel},
 	}
 	protoB := &types.Issue{
 		Title:     "Proto B",
 		Status:    types.StatusOpen,
 		Priority:  2,
 		IssueType: types.TypeEpic,
-		Labels:    []string{MoleculeLabel},
+		Labels:    []string{molcmd.MoleculeLabel},
 	}
 
 	if err := store.CreateIssue(ctx, protoA, "test"); err != nil {
@@ -248,7 +225,7 @@ func TestBondProtoProto(t *testing.T) {
 	}
 
 	// Test sequential bond
-	result, err := bondProtoProto(ctx, store, protoA, protoB, types.BondTypeSequential, "", "test")
+	result, err := molcmd.BondProtoProto(ctx, store, protoA, protoB, types.BondTypeSequential, "", "test")
 	if err != nil {
 		t.Fatalf("bondProtoProto failed: %v", err)
 	}
@@ -265,7 +242,7 @@ func TestBondProtoProto(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get compound: %v", err)
 	}
-	if !isProto(compound) {
+	if !molcmd.IsProtoIssue(compound) {
 		t.Errorf("Compound should be a proto (have template label), got labels: %v", compound.Labels)
 	}
 	if compound.Priority != 1 {
@@ -345,7 +322,7 @@ func TestBondProtoMol(t *testing.T) {
 
 	// Bond proto to molecule
 	vars := map[string]string{"name": "auth-feature"}
-	result, err := bondProtoMol(ctx, store, proto, mol, types.BondTypeSequential, vars, "", "test", false, false)
+	result, err := molcmd.BondProtoMol(ctx, store, proto, mol, types.BondTypeSequential, vars, "", "test", false, false)
 	if err != nil {
 		t.Fatalf("bondProtoMol failed: %v", err)
 	}
@@ -395,7 +372,7 @@ func TestBondMolMol(t *testing.T) {
 	}
 
 	// Test sequential bond
-	result, err := bondMolMol(ctx, store, molA, molB, types.BondTypeSequential, "test")
+	result, err := molcmd.BondMolMol(ctx, store, molA, molB, types.BondTypeSequential, "test")
 	if err != nil {
 		t.Fatalf("bondMolMol failed: %v", err)
 	}
@@ -440,7 +417,7 @@ func TestBondMolMol(t *testing.T) {
 		t.Fatalf("Failed to create molD: %v", err)
 	}
 
-	result2, err := bondMolMol(ctx, store, molC, molD, types.BondTypeParallel, "test")
+	result2, err := molcmd.BondMolMol(ctx, store, molC, molD, types.BondTypeParallel, "test")
 	if err != nil {
 		t.Fatalf("bondMolMol parallel failed: %v", err)
 	}
@@ -529,7 +506,7 @@ func TestSquashMolecule(t *testing.T) {
 
 	// Test squash with keep-children
 	children := []*types.Issue{child1, child2}
-	result, err := squashMolecule(ctx, s, root, children, true, "", "test")
+	result, err := molcmd.SquashMolecule(ctx, s, root, children, true, "", "test")
 	if err != nil {
 		t.Fatalf("squashMolecule failed: %v", err)
 	}
@@ -611,7 +588,7 @@ func TestSquashMoleculeWithDelete(t *testing.T) {
 	}
 
 	// Squash with delete (keepChildren=false)
-	result, err := squashMolecule(ctx, s, root, []*types.Issue{child}, false, "", "test")
+	result, err := molcmd.SquashMolecule(ctx, s, root, []*types.Issue{child}, false, "", "test")
 	if err != nil {
 		t.Fatalf("squashMolecule failed: %v", err)
 	}
@@ -651,7 +628,7 @@ func TestGenerateDigest(t *testing.T) {
 		},
 	}
 
-	digest := generateDigest(root, children)
+	digest := molcmd.GenerateDigest(root, children)
 
 	// Verify structure
 	if !strings.Contains(digest, "## Molecule Execution Summary") {
@@ -723,7 +700,7 @@ func TestSquashMoleculeWithAgentSummary(t *testing.T) {
 
 	// Squash with agent-provided summary
 	agentSummary := "## AI-Generated Summary\n\nThe agent completed the task successfully."
-	result, err := squashMolecule(ctx, s, root, []*types.Issue{child}, true, agentSummary, "test")
+	result, err := molcmd.SquashMolecule(ctx, s, root, []*types.Issue{child}, true, agentSummary, "test")
 	if err != nil {
 		t.Fatalf("squashMolecule failed: %v", err)
 	}
@@ -842,7 +819,7 @@ func TestSpawnWithBasicAttach(t *testing.T) {
 	}
 
 	// Attach the second proto (simulating --attach flag behavior)
-	bondResult, err := bondProtoMol(ctx, s, attachProto, spawnedMol, types.BondTypeSequential, vars, "", "test", false, false)
+	bondResult, err := molcmd.BondProtoMol(ctx, s, attachProto, spawnedMol, types.BondTypeSequential, vars, "", "test", false, false)
 	if err != nil {
 		t.Fatalf("Failed to bond attachment: %v", err)
 	}
@@ -947,12 +924,12 @@ func TestSpawnWithMultipleAttachments(t *testing.T) {
 	}
 
 	// Attach both protos (simulating --attach A --attach B)
-	bondResultA, err := bondProtoMol(ctx, s, attachA, spawnedMol, types.BondTypeSequential, nil, "", "test", false, false)
+	bondResultA, err := molcmd.BondProtoMol(ctx, s, attachA, spawnedMol, types.BondTypeSequential, nil, "", "test", false, false)
 	if err != nil {
 		t.Fatalf("Failed to bond attachA: %v", err)
 	}
 
-	bondResultB, err := bondProtoMol(ctx, s, attachB, spawnedMol, types.BondTypeSequential, nil, "", "test", false, false)
+	bondResultB, err := molcmd.BondProtoMol(ctx, s, attachB, spawnedMol, types.BondTypeSequential, nil, "", "test", false, false)
 	if err != nil {
 		t.Fatalf("Failed to bond attachB: %v", err)
 	}
@@ -1065,7 +1042,7 @@ func TestSpawnAttachTypes(t *testing.T) {
 			}
 
 			// Bond with specified type
-			bondResult, err := bondProtoMol(ctx, s, attachProto, spawnedMol, tt.bondType, nil, "", "test", false, false)
+			bondResult, err := molcmd.BondProtoMol(ctx, s, attachProto, spawnedMol, tt.bondType, nil, "", "test", false, false)
 			if err != nil {
 				t.Fatalf("Failed to bond: %v", err)
 			}
@@ -1103,19 +1080,19 @@ func TestSpawnAttachNonProtoError(t *testing.T) {
 		Labels: []string{"bug"}, // Not MoleculeLabel
 	}
 
-	if isProto(issue) {
-		t.Error("isProto should return false for issue without template label")
+	if molcmd.IsProtoIssue(issue) {
+		t.Error("IsProtoIssue should return false for issue without template label")
 	}
 
 	// Issue with template label should pass
 	protoIssue := &types.Issue{
 		Title:  "A proto",
 		Status: types.StatusOpen,
-		Labels: []string{MoleculeLabel},
+		Labels: []string{molcmd.MoleculeLabel},
 	}
 
-	if !isProto(protoIssue) {
-		t.Error("isProto should return true for issue with template label")
+	if !molcmd.IsProtoIssue(protoIssue) {
+		t.Error("IsProtoIssue should return true for issue with template label")
 	}
 }
 
@@ -1230,7 +1207,7 @@ func TestSpawnVariableAggregation(t *testing.T) {
 
 	// Bond attachment with same variables
 	spawnedMol, _ := s.GetIssue(ctx, spawnResult.NewEpicID)
-	bondResult, err := bondProtoMol(ctx, s, attachProto, spawnedMol, types.BondTypeSequential, vars, "", "test", false, false)
+	bondResult, err := molcmd.BondProtoMol(ctx, s, attachProto, spawnedMol, types.BondTypeSequential, vars, "", "test", false, false)
 	if err != nil {
 		t.Fatalf("Failed to bond: %v", err)
 	}
@@ -1423,7 +1400,7 @@ func TestGetMoleculeProgress(t *testing.T) {
 	}
 
 	// Get progress
-	progress, err := getMoleculeProgress(ctx, s, root.ID)
+	progress, err := molcmd.GetMoleculeProgress(ctx, s, root.ID)
 	if err != nil {
 		t.Fatalf("getMoleculeProgress failed: %v", err)
 	}
@@ -1516,21 +1493,21 @@ func TestFindParentMolecule(t *testing.T) {
 	}
 
 	// Find parent molecule from grandchild
-	moleculeID := findParentMolecule(ctx, s, grandchild.ID)
+	moleculeID := molcmd.FindParentMolecule(ctx, s, grandchild.ID)
 	if moleculeID != root.ID {
-		t.Errorf("findParentMolecule(grandchild) = %q, want %q", moleculeID, root.ID)
+		t.Errorf("molcmd.FindParentMolecule(grandchild) = %q, want %q", moleculeID, root.ID)
 	}
 
 	// Find parent molecule from child
-	moleculeID = findParentMolecule(ctx, s, child.ID)
+	moleculeID = molcmd.FindParentMolecule(ctx, s, child.ID)
 	if moleculeID != root.ID {
-		t.Errorf("findParentMolecule(child) = %q, want %q", moleculeID, root.ID)
+		t.Errorf("molcmd.FindParentMolecule(child) = %q, want %q", moleculeID, root.ID)
 	}
 
 	// Find parent molecule from root
-	moleculeID = findParentMolecule(ctx, s, root.ID)
+	moleculeID = molcmd.FindParentMolecule(ctx, s, root.ID)
 	if moleculeID != root.ID {
-		t.Errorf("findParentMolecule(root) = %q, want %q", moleculeID, root.ID)
+		t.Errorf("molcmd.FindParentMolecule(root) = %q, want %q", moleculeID, root.ID)
 	}
 
 	// Create orphan issue (not part of any molecule)
@@ -1545,14 +1522,14 @@ func TestFindParentMolecule(t *testing.T) {
 	}
 
 	// Should return empty for orphan
-	moleculeID = findParentMolecule(ctx, s, orphan.ID)
+	moleculeID = molcmd.FindParentMolecule(ctx, s, orphan.ID)
 	if moleculeID != "" {
-		t.Errorf("findParentMolecule(orphan) = %q, want empty", moleculeID)
+		t.Errorf("molcmd.FindParentMolecule(orphan) = %q, want empty", moleculeID)
 	}
 }
 
 // TestAdvanceToNextStep tests auto-advancing to next step
-func TestAdvanceToNextStep(t *testing.T) {
+func Testmolcmd.AdvanceToNextStep(t *testing.T) {
 	ctx := context.Background()
 	dbPath := t.TempDir() + "/test.db"
 	s, err := sqlite.New(ctx, dbPath)
@@ -1612,7 +1589,7 @@ func TestAdvanceToNextStep(t *testing.T) {
 	}
 
 	// Advance from step1 (just closed) without auto-claim
-	result, err := AdvanceToNextStep(ctx, s, step1.ID, false, "test")
+	result, err := molcmd.AdvanceToNextStep(ctx, s, step1.ID, false, "test")
 	if err != nil {
 		t.Fatalf("AdvanceToNextStep failed: %v", err)
 	}
@@ -1638,7 +1615,7 @@ func TestAdvanceToNextStep(t *testing.T) {
 	}
 
 	// Now test with auto-claim
-	result, err = AdvanceToNextStep(ctx, s, step1.ID, true, "test")
+	result, err = molcmd.AdvanceToNextStep(ctx, s, step1.ID, true, "test")
 	if err != nil {
 		t.Fatalf("AdvanceToNextStep with auto-claim failed: %v", err)
 	}
@@ -1696,7 +1673,7 @@ func TestAdvanceToNextStepMoleculeComplete(t *testing.T) {
 	}
 
 	// Advance from the only step (molecule should be complete)
-	result, err := AdvanceToNextStep(ctx, s, step1.ID, false, "test")
+	result, err := molcmd.AdvanceToNextStep(ctx, s, step1.ID, false, "test")
 	if err != nil {
 		t.Fatalf("AdvanceToNextStep failed: %v", err)
 	}
@@ -1736,7 +1713,7 @@ func TestAdvanceToNextStepOrphanIssue(t *testing.T) {
 	}
 
 	// Advance should return nil (not part of molecule)
-	result, err := AdvanceToNextStep(ctx, s, orphan.ID, false, "test")
+	result, err := molcmd.AdvanceToNextStep(ctx, s, orphan.ID, false, "test")
 	if err != nil {
 		t.Fatalf("AdvanceToNextStep failed: %v", err)
 	}
@@ -1958,7 +1935,7 @@ func TestBondProtoMolWithRef(t *testing.T) {
 	// Bond proto to patrol with custom child ref
 	vars := map[string]string{"polecat_name": "ace"}
 	childRef := "arm-{{polecat_name}}"
-	result, err := bondProtoMol(ctx, s, protoRoot, patrol, types.BondTypeSequential, vars, childRef, "test", false, false)
+	result, err := molcmd.BondProtoMol(ctx, s, protoRoot, patrol, types.BondTypeSequential, vars, childRef, "test", false, false)
 	if err != nil {
 		t.Fatalf("bondProtoMol failed: %v", err)
 	}
@@ -2029,14 +2006,14 @@ func TestBondProtoMolMultipleArms(t *testing.T) {
 
 	// Bond arm-ace
 	varsAce := map[string]string{"name": "ace"}
-	resultAce, err := bondProtoMol(ctx, s, proto, patrol, types.BondTypeParallel, varsAce, "arm-{{name}}", "test", false, false)
+	resultAce, err := molcmd.BondProtoMol(ctx, s, proto, patrol, types.BondTypeParallel, varsAce, "arm-{{name}}", "test", false, false)
 	if err != nil {
 		t.Fatalf("bondProtoMol (ace) failed: %v", err)
 	}
 
 	// Bond arm-nux
 	varsNux := map[string]string{"name": "nux"}
-	resultNux, err := bondProtoMol(ctx, s, proto, patrol, types.BondTypeParallel, varsNux, "arm-{{name}}", "test", false, false)
+	resultNux, err := molcmd.BondProtoMol(ctx, s, proto, patrol, types.BondTypeParallel, varsNux, "arm-{{name}}", "test", false, false)
 	if err != nil {
 		t.Fatalf("bondProtoMol (nux) failed: %v", err)
 	}

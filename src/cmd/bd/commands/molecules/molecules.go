@@ -105,12 +105,20 @@ func IsProto(labels []string) bool {
 // Register adds molecule commands to the root command.
 // Called from main package during initialization.
 func Register(root *cobra.Command) {
-	// Register migrated subcommands
+	// Register all subcommands
 	registerShowCmd()
 	registerCookCmd()
-
-	// Note: Other subcommands (pour, wisp, bond, etc.) are still in main package
-	// and register themselves via their init() functions using GetMolCmd()
+	registerBondCmd()
+	registerPourCmd()
+	registerWispCmd()
+	registerBurnCmd()
+	registerSquashCmd()
+	registerSeedCmd()
+	registerCurrentCmd()
+	registerProgressCmd()
+	registerStaleCmd()
+	registerDistillCmd()
+	registerReadyGatedCmd()
 
 	root.AddCommand(molCmd)
 
