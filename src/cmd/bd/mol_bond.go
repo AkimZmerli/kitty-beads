@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 	"github.com/steveyegge/beads/internal/formula"
 	"github.com/steveyegge/beads/internal/storage"
 	"github.com/steveyegge/beads/internal/types"
@@ -602,7 +603,7 @@ func resolveOrCookToSubgraph(ctx context.Context, s storage.Storage, operand str
 
 	// Try to cook formula inline to in-memory subgraph
 	// Pass vars for step condition filtering (bd-7zka.1)
-	subgraph, err := resolveAndCookFormulaWithVars(operand, nil, vars)
+	subgraph, err := molcmd.ResolveAndCookFormulaWithVars(operand, nil, vars)
 	if err != nil {
 		return nil, false, fmt.Errorf("'%s' not found as issue or formula: %w", operand, err)
 	}

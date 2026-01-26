@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 	"github.com/steveyegge/beads/internal/config"
 	"github.com/steveyegge/beads/internal/rpc"
 	"github.com/steveyegge/beads/internal/storage/sqlite"
@@ -344,7 +345,7 @@ func runMoleculeReady(_ *cobra.Command, molIDArg string) {
 	}
 
 	// Get parallel analysis to find ready steps
-	analysis := analyzeMoleculeParallel(subgraph)
+	analysis := molcmd.AnalyzeMoleculeParallel(subgraph)
 
 	// Collect ready steps
 	var readySteps []*MoleculeReadyStep
@@ -432,9 +433,9 @@ func runMoleculeReady(_ *cobra.Command, molIDArg string) {
 
 // MoleculeReadyStep holds a ready step with its parallel info
 type MoleculeReadyStep struct {
-	Issue         *types.Issue  `json:"issue"`
-	ParallelInfo  *ParallelInfo `json:"parallel_info"`
-	ParallelGroup string        `json:"parallel_group,omitempty"`
+	Issue         *types.Issue          `json:"issue"`
+	ParallelInfo  *molcmd.ParallelInfo  `json:"parallel_info"`
+	ParallelGroup string                `json:"parallel_group,omitempty"`
 }
 
 // MoleculeReadyOutput is the JSON output for bd ready --mol

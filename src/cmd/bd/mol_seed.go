@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 )
 
 var molSeedCmd = &cobra.Command{
@@ -122,7 +123,7 @@ func verifyFormula(formulaName string, vars map[string]string) error {
 	// 2. Formula syntax is valid
 	// 3. Formula can be resolved (extends, etc.)
 	// 4. Formula can be cooked to subgraph
-	_, err := resolveAndCookFormulaWithVars(formulaName, nil, vars)
+	_, err := molcmd.ResolveAndCookFormulaWithVars(formulaName, nil, vars)
 	if err != nil {
 		return fmt.Errorf("formula %q not accessible: %w", formulaName, err)
 	}

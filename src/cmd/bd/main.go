@@ -17,6 +17,15 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/steveyegge/beads/cmd/bd/cli"
+	"github.com/steveyegge/beads/cmd/bd/commands/admin"
+	"github.com/steveyegge/beads/cmd/bd/commands/comments"
+	bdconfig "github.com/steveyegge/beads/cmd/bd/commands/config"
+	"github.com/steveyegge/beads/cmd/bd/commands/dependencies"
+	"github.com/steveyegge/beads/cmd/bd/commands/epics"
+	"github.com/steveyegge/beads/cmd/bd/commands/gates"
+	"github.com/steveyegge/beads/cmd/bd/commands/labels"
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 	"github.com/steveyegge/beads/internal/beads"
 	"github.com/steveyegge/beads/internal/config"
 	"github.com/steveyegge/beads/internal/configfile"
@@ -929,6 +938,9 @@ var rootCmd = &cobra.Command{
 
 		// Sync all state to CommandContext for unified access
 		syncCommandContext()
+
+		// Sync to shared cli.Context for subcommand packages
+		syncCLIContext()
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		// Handle --no-db mode: write memory storage back to JSONL
@@ -1037,7 +1049,50 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// syncCLIContext copies runtime state to the shared cli.Context.
+// This enables subcommand packages to access CLI state without importing main.
+func syncCLIContext() {
+	cliCtx := cli.Get()
+	cliCtx.SetStore(store)
+	cliCtx.SetDaemonClient(daemonClient)
+	cliCtx.SetRootCtx(rootCtx)
+	cliCtx.SetActor(actor)
+	cliCtx.SetJSONOutput(jsonOutput)
+
+	// Wire up helper functions (avoids import cycles)
+	cliCtx.ResolvePartialIDFn = func(ctx context.Context, id string) (string, error) {
+		return utils.ResolvePartialID(ctx, store, id)
+	}
+	cliCtx.MarkDirtyFn = markDirtyAndScheduleFlush
+	cliCtx.MarkDirtyAndScheduleFlushFn = markDirtyAndScheduleFlush
+	cliCtx.FatalErrorRespectJSONFn = FatalErrorRespectJSON
+	cliCtx.OutputJSONFn = outputJSON
+	cliCtx.CheckReadonlyFn = CheckReadonly
+	cliCtx.EnsureStoreActiveFn = ensureStoreActive
+	cliCtx.FallbackToDirectModeFn = fallbackToDirectMode
+	cliCtx.GetActorWithGitFn = getActorWithGit
+	cliCtx.IssueIDCompletionFn = issueIDCompletion
+}
+
 func main() {
+	// Set root command for subpackage registration
+	cli.RootCmd = rootCmd
+
+	// Register feature subcommands (vertical slice architecture)
+	labels.Register(rootCmd)
+	comments.Register(rootCmd)
+	bdconfig.Register(rootCmd)
+	epics.Register(rootCmd)
+	gates.Register(rootCmd)
+	dependencies.Register(rootCmd)
+	molcmd.Register(rootCmd)
+
+	// Register admin command group with its subcommands
+	admin.Register(rootCmd)
+	admin.AddSubcommand(cleanupCmd)
+	admin.AddSubcommand(compactCmd)
+	admin.AddSubcommand(resetCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

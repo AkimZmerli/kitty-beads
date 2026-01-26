@@ -1,4 +1,4 @@
-package main
+package molecules
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/steveyegge/beads/cmd/bd/cli"
+	"github.com/steveyegge/beads/cmd/bd/commands/shared/template"
 	"github.com/steveyegge/beads/internal/types"
 	"github.com/steveyegge/beads/internal/ui"
 	"github.com/steveyegge/beads/internal/utils"
@@ -29,47 +31,53 @@ The --parallel flag highlights parallelizable steps:
 Example:
   bd mol show bd-patrol --parallel`,
 	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx := rootCtx
+	Run:  runMolShow,
+}
 
-		// mol show requires direct store access for subgraph loading
-		if store == nil {
-			if daemonClient != nil {
-				fmt.Fprintf(os.Stderr, "Error: mol show requires direct database access\n")
-				fmt.Fprintf(os.Stderr, "Hint: use --no-daemon flag: bd --no-daemon mol show %s\n", args[0])
-			} else {
-				fmt.Fprintf(os.Stderr, "Error: no database connection\n")
-			}
-			os.Exit(1)
-		}
+func runMolShow(cmd *cobra.Command, args []string) {
+	cliCtx := cli.Get()
+	ctx := cliCtx.GetRootCtx()
+	store := cliCtx.GetStore()
 
-		moleculeID, err := utils.ResolvePartialID(ctx, store, args[0])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: molecule '%s' not found\n", args[0])
-			os.Exit(1)
-		}
-
-		subgraph, err := loadTemplateSubgraph(ctx, store, moleculeID)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading molecule: %v\n", err)
-			os.Exit(1)
-		}
-
-		if molShowParallel {
-			showMoleculeWithParallel(subgraph)
+	// mol show requires direct store access for subgraph loading
+	if store == nil {
+		if cliCtx.GetDaemonClient() != nil {
+			fmt.Fprintf(os.Stderr, "Error: mol show requires direct database access\n")
+			fmt.Fprintf(os.Stderr, "Hint: use --no-daemon flag: bd --no-daemon mol show %s\n", args[0])
 		} else {
-			showMolecule(subgraph)
+			fmt.Fprintf(os.Stderr, "Error: no database connection\n")
 		}
-	},
+		os.Exit(1)
+	}
+
+	moleculeID, err := utils.ResolvePartialID(ctx, store, args[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: molecule '%s' not found\n", args[0])
+		os.Exit(1)
+	}
+
+	subgraph, err := template.LoadSubgraph(ctx, store, moleculeID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading molecule: %v\n", err)
+		os.Exit(1)
+	}
+
+	if molShowParallel {
+		showMoleculeWithParallel(subgraph)
+	} else {
+		showMolecule(subgraph)
+	}
 }
 
 func showMolecule(subgraph *MoleculeSubgraph) {
-	if jsonOutput {
-		outputJSON(map[string]interface{}{
+	cliCtx := cli.Get()
+
+	if cliCtx.IsJSONOutput() {
+		cliCtx.OutputJSON(map[string]interface{}{
 			"root":         subgraph.Root,
 			"issues":       subgraph.Issues,
 			"dependencies": subgraph.Dependencies,
-			"variables":    extractAllVariables(subgraph),
+			"variables":    template.ExtractAllVariables(subgraph),
 			"is_compound":  subgraph.Root.IsCompound(),
 			"bonded_from":  subgraph.Root.BondedFrom,
 		})
@@ -91,7 +99,7 @@ func showMolecule(subgraph *MoleculeSubgraph) {
 		showCompoundBondingInfo(subgraph.Root)
 	}
 
-	vars := extractAllVariables(subgraph)
+	vars := template.ExtractAllVariables(subgraph)
 	if len(vars) > 0 {
 		fmt.Printf("\n%s Variables:\n", ui.RenderWarn("📝"))
 		for _, v := range vars {
@@ -100,8 +108,15 @@ func showMolecule(subgraph *MoleculeSubgraph) {
 	}
 
 	fmt.Printf("\n%s Structure:\n", ui.RenderPass("🌲"))
-	printMoleculeTree(subgraph, subgraph.Root.ID, 0, true)
+	printMoleculeTreeLocal(subgraph, subgraph.Root.ID, 0, true)
 	fmt.Println()
+}
+
+// printMoleculeTreeLocal prints the molecule structure as a tree (local implementation)
+func printMoleculeTreeLocal(subgraph *MoleculeSubgraph, parentID string, depth int, isRoot bool) {
+	template.PrintTree(subgraph, parentID, depth, isRoot, func(format string, args ...interface{}) {
+		fmt.Printf(format, args...)
+	})
 }
 
 // showCompoundBondingInfo displays the bonding lineage for compound molecules.
@@ -117,7 +132,7 @@ func showCompoundBondingInfo(root *types.Issue) {
 		}
 
 		// Format bond type for display
-		bondTypeDisplay := formatBondType(ref.BondType)
+		bondTypeDisplay := FormatBondType(ref.BondType)
 
 		// Show source ID with bond type
 		if ref.BondPoint != "" {
@@ -128,8 +143,9 @@ func showCompoundBondingInfo(root *types.Issue) {
 	}
 }
 
-// formatBondType returns a human-readable bond type description
-func formatBondType(bondType string) string {
+// FormatBondType returns a human-readable bond type description.
+// Exported for testing.
+func FormatBondType(bondType string) string {
 	switch bondType {
 	case types.BondTypeSequential:
 		return "sequential"
@@ -147,29 +163,31 @@ func formatBondType(bondType string) string {
 	}
 }
 
-// ParallelInfo holds parallel analysis information for a step
+// ParallelInfo holds parallel analysis information for a step.
+// Exported for use by ready.go in main package.
 type ParallelInfo struct {
 	StepID        string   `json:"step_id"`
 	Status        string   `json:"status"`
-	IsReady       bool     `json:"is_ready"`        // Can start now (no blocking deps)
-	ParallelGroup string   `json:"parallel_group"`  // Group ID (steps with same group can parallelize)
-	BlockedBy     []string `json:"blocked_by"`      // IDs of open steps blocking this one
-	Blocks        []string `json:"blocks"`          // IDs of steps this one blocks
-	CanParallel   []string `json:"can_parallel"`    // IDs of steps that can run in parallel with this
+	IsReady       bool     `json:"is_ready"`       // Can start now (no blocking deps)
+	ParallelGroup string   `json:"parallel_group"` // Group ID (steps with same group can parallelize)
+	BlockedBy     []string `json:"blocked_by"`     // IDs of open steps blocking this one
+	Blocks        []string `json:"blocks"`         // IDs of steps this one blocks
+	CanParallel   []string `json:"can_parallel"`   // IDs of steps that can run in parallel with this
 }
 
 // ParallelAnalysis holds the complete parallel analysis for a molecule
 type ParallelAnalysis struct {
-	MoleculeID     string                  `json:"molecule_id"`
-	TotalSteps     int                     `json:"total_steps"`
-	ReadySteps     int                     `json:"ready_steps"`
-	ParallelGroups map[string][]string     `json:"parallel_groups"` // group ID -> step IDs
+	MoleculeID     string                   `json:"molecule_id"`
+	TotalSteps     int                      `json:"total_steps"`
+	ReadySteps     int                      `json:"ready_steps"`
+	ParallelGroups map[string][]string      `json:"parallel_groups"` // group ID -> step IDs
 	Steps          map[string]*ParallelInfo `json:"steps"`
 }
 
-// analyzeMoleculeParallel performs parallel detection on a molecule subgraph.
+// AnalyzeMoleculeParallel performs parallel detection on a molecule subgraph.
 // Returns analysis of which steps can run in parallel.
-func analyzeMoleculeParallel(subgraph *MoleculeSubgraph) *ParallelAnalysis {
+// Exported for use by ready.go in main package.
+func AnalyzeMoleculeParallel(subgraph *MoleculeSubgraph) *ParallelAnalysis {
 	analysis := &ParallelAnalysis{
 		MoleculeID:     subgraph.Root.ID,
 		TotalSteps:     len(subgraph.Issues),
@@ -248,7 +266,7 @@ func analyzeMoleculeParallel(subgraph *MoleculeSubgraph) *ParallelAnalysis {
 	// 3. They share the same blocking depth (distance from root)
 
 	// Calculate blocking depth for each step
-	depths := calculateBlockingDepths(subgraph, blockedBy)
+	depths := CalculateBlockingDepths(subgraph, blockedBy)
 
 	// Group steps by depth - steps at same depth can potentially parallelize
 	depthGroups := make(map[int][]string)
@@ -331,9 +349,10 @@ func analyzeMoleculeParallel(subgraph *MoleculeSubgraph) *ParallelAnalysis {
 	return analysis
 }
 
-// calculateBlockingDepths calculates the "blocking depth" of each step.
+// CalculateBlockingDepths calculates the "blocking depth" of each step.
 // Depth 0 = no blockers, Depth 1 = blocked by depth-0 steps, etc.
-func calculateBlockingDepths(subgraph *MoleculeSubgraph, blockedBy map[string]map[string]bool) map[string]int {
+// Exported for testing.
+func CalculateBlockingDepths(subgraph *MoleculeSubgraph, blockedBy map[string]map[string]bool) map[string]int {
 	depths := make(map[string]int)
 	visited := make(map[string]bool)
 
@@ -374,14 +393,15 @@ func calculateBlockingDepths(subgraph *MoleculeSubgraph, blockedBy map[string]ma
 
 // showMoleculeWithParallel displays molecule structure with parallel annotations
 func showMoleculeWithParallel(subgraph *MoleculeSubgraph) {
-	analysis := analyzeMoleculeParallel(subgraph)
+	cliCtx := cli.Get()
+	analysis := AnalyzeMoleculeParallel(subgraph)
 
-	if jsonOutput {
-		outputJSON(map[string]interface{}{
+	if cliCtx.IsJSONOutput() {
+		cliCtx.OutputJSON(map[string]interface{}{
 			"root":         subgraph.Root,
 			"issues":       subgraph.Issues,
 			"dependencies": subgraph.Dependencies,
-			"variables":    extractAllVariables(subgraph),
+			"variables":    template.ExtractAllVariables(subgraph),
 			"parallel":     analysis,
 			"is_compound":  subgraph.Root.IsCompound(),
 			"bonded_from":  subgraph.Root.BondedFrom,
@@ -412,7 +432,7 @@ func showMoleculeWithParallel(subgraph *MoleculeSubgraph) {
 		}
 	}
 
-	vars := extractAllVariables(subgraph)
+	vars := template.ExtractAllVariables(subgraph)
 	if len(vars) > 0 {
 		fmt.Printf("\n%s Variables:\n", ui.RenderWarn("📝"))
 		for _, v := range vars {
@@ -499,7 +519,8 @@ func getParallelAnnotation(info *ParallelInfo) string {
 	return " [" + strings.Join(parts, " | ") + "]"
 }
 
-func init() {
+// registerShowCmd registers the mol show command
+func registerShowCmd() {
 	molShowCmd.Flags().BoolVarP(&molShowParallel, "parallel", "p", false, "Show parallel step analysis")
 	molCmd.AddCommand(molShowCmd)
 }

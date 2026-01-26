@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 	"github.com/steveyegge/beads/internal/rpc"
 	"github.com/steveyegge/beads/internal/storage/sqlite"
 	"github.com/steveyegge/beads/internal/types"
@@ -168,7 +169,7 @@ func runWispCreate(cmd *cobra.Command, args []string) {
 	// Try to cook formula inline (ephemeral protos)
 	// This works for any valid formula name, not just "mol-" prefixed ones
 	// Pass vars for step condition filtering (bd-7zka.1)
-	sg, err := resolveAndCookFormulaWithVars(args[0], nil, vars)
+	sg, err := molcmd.ResolveAndCookFormulaWithVars(args[0], nil, vars)
 	if err == nil {
 		subgraph = sg
 		protoID = sg.Root.ID

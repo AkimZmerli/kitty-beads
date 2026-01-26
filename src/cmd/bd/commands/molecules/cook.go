@@ -1,4 +1,4 @@
-package main
+package molecules
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/steveyegge/beads/cmd/bd/cli"
+	"github.com/steveyegge/beads/cmd/bd/commands/shared/template"
 	"github.com/steveyegge/beads/internal/formula"
 	"github.com/steveyegge/beads/internal/storage"
 	"github.com/steveyegge/beads/internal/storage/sqlite"
@@ -16,9 +18,9 @@ import (
 	"github.com/steveyegge/beads/internal/ui"
 )
 
-// stepTypeToIssueType converts a formula step type string to a types.IssueType.
+// StepTypeToIssueType converts a formula step type string to a types.IssueType.
 // Returns types.TypeTask for empty or unrecognized types.
-func stepTypeToIssueType(stepType string) types.IssueType {
+func StepTypeToIssueType(stepType string) types.IssueType {
 	switch stepType {
 	case "task":
 		return types.TypeTask
@@ -90,8 +92,8 @@ Output (--persist):
 	Run:  runCook,
 }
 
-// cookResult holds the result of cooking a formula
-type cookResult struct {
+// CookResult holds the result of cooking a formula
+type CookResult struct {
 	ProtoID    string   `json:"proto_id"`
 	Formula    string   `json:"formula"`
 	Created    int      `json:"created"`
@@ -151,10 +153,10 @@ func parseCookFlags(cmd *cobra.Command, args []string) (*cookFlags, error) {
 	}, nil
 }
 
-// loadAndResolveFormula parses a formula file and applies all transformations.
+// LoadAndResolveFormula parses a formula file and applies all transformations.
 // It first tries to load by name from the formula registry (.beads/formulas/),
 // and falls back to parsing as a file path if that fails.
-func loadAndResolveFormula(formulaPath string, searchPaths []string) (*formula.Formula, error) {
+func LoadAndResolveFormula(formulaPath string, searchPaths []string) (*formula.Formula, error) {
 	parser := formula.NewParser(searchPaths...)
 
 	// Try to load by name first (from .beads/formulas/ registry)
@@ -237,12 +239,12 @@ func outputCookDryRun(resolved *formula.Formula, protoID string, runtimeMode boo
 
 	// In runtime mode, show substituted steps
 	if runtimeMode {
-		substituteFormulaVars(resolved, inputVars)
+		SubstituteFormulaVars(resolved, inputVars)
 		fmt.Printf("Steps (%d) [variables substituted]:\n", len(resolved.Steps))
 	} else {
 		fmt.Printf("Steps (%d) [{{variables}} shown as placeholders]:\n", len(resolved.Steps))
 	}
-	printFormulaSteps(resolved.Steps, "  ")
+	PrintFormulaSteps(resolved.Steps, "  ")
 
 	if len(vars) > 0 {
 		fmt.Printf("\nVariables used: %s\n", strings.Join(vars, ", "))
@@ -285,6 +287,8 @@ func outputCookDryRun(resolved *formula.Formula, protoID string, runtimeMode boo
 
 // outputCookEphemeral outputs the resolved formula as JSON (ephemeral mode)
 func outputCookEphemeral(resolved *formula.Formula, runtimeMode bool, inputVars map[string]string, vars []string) error {
+	cliCtx := cli.Get()
+
 	if runtimeMode {
 		// Apply defaults from formula variable definitions
 		for name, def := range resolved.Vars {
@@ -306,14 +310,17 @@ func outputCookEphemeral(resolved *formula.Formula, runtimeMode bool, inputVars 
 		}
 
 		// Substitute variables in the formula
-		substituteFormulaVars(resolved, inputVars)
+		SubstituteFormulaVars(resolved, inputVars)
 	}
-	outputJSON(resolved)
+	cliCtx.OutputJSON(resolved)
 	return nil
 }
 
 // persistCookFormula creates a proto bead in the database (persist mode)
 func persistCookFormula(ctx context.Context, resolved *formula.Formula, protoID string, force bool, vars, bondPoints []string) error {
+	cliCtx := cli.Get()
+	store := cliCtx.GetStore()
+
 	// Check if proto already exists
 	existingProto, err := store.GetIssue(ctx, protoID)
 	if err == nil && existingProto != nil {
@@ -321,22 +328,22 @@ func persistCookFormula(ctx context.Context, resolved *formula.Formula, protoID 
 			return fmt.Errorf("proto %s already exists (use --force to replace)", protoID)
 		}
 		// Delete existing proto and its children
-		if err := deleteProtoSubgraph(ctx, store, protoID); err != nil {
+		if err := DeleteProtoSubgraph(ctx, store, protoID); err != nil {
 			return fmt.Errorf("deleting existing proto: %w", err)
 		}
 	}
 
 	// Create the proto bead from the formula
-	result, err := cookFormula(ctx, store, resolved, protoID)
+	result, err := CookFormula(ctx, store, resolved, protoID)
 	if err != nil {
 		return fmt.Errorf("cooking formula: %w", err)
 	}
 
 	// Schedule auto-flush
-	markDirtyAndScheduleFlush()
+	cliCtx.MarkDirtyAndScheduleFlush()
 
-	if jsonOutput {
-		outputJSON(cookResult{
+	if cliCtx.IsJSONOutput() {
+		cliCtx.OutputJSON(CookResult{
 			ProtoID:    result.ProtoID,
 			Formula:    resolved.Formula,
 			Created:    result.Created,
@@ -359,6 +366,8 @@ func persistCookFormula(ctx context.Context, resolved *formula.Formula, protoID 
 }
 
 func runCook(cmd *cobra.Command, args []string) {
+	cliCtx := cli.Get()
+
 	// Parse and validate flags
 	flags, err := parseCookFlags(cmd, args)
 	if err != nil {
@@ -368,9 +377,9 @@ func runCook(cmd *cobra.Command, args []string) {
 
 	// Validate store access for persist mode
 	if flags.persist {
-		CheckReadonly("cook --persist")
-		if store == nil {
-			if daemonClient != nil {
+		cliCtx.CheckReadonly("cook --persist")
+		if cliCtx.GetStore() == nil {
+			if cliCtx.GetDaemonClient() != nil {
 				fmt.Fprintf(os.Stderr, "Error: cook --persist requires direct database access\n")
 				fmt.Fprintf(os.Stderr, "Hint: use --no-daemon flag: bd --no-daemon cook %s --persist ...\n", flags.formulaPath)
 			} else {
@@ -381,7 +390,7 @@ func runCook(cmd *cobra.Command, args []string) {
 	}
 
 	// Load and resolve the formula
-	resolved, err := loadAndResolveFormula(flags.formulaPath, flags.searchPaths)
+	resolved, err := LoadAndResolveFormula(flags.formulaPath, flags.searchPaths)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -418,24 +427,22 @@ func runCook(cmd *cobra.Command, args []string) {
 	}
 
 	// Handle persist mode
-	if err := persistCookFormula(rootCtx, resolved, protoID, flags.force, vars, bondPoints); err != nil {
+	if err := persistCookFormula(cliCtx.GetRootCtx(), resolved, protoID, flags.force, vars, bondPoints); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-// cookFormulaResult holds the result of cooking
-type cookFormulaResult struct {
+// CookFormulaResult holds the result of cooking
+type CookFormulaResult struct {
 	ProtoID string
 	Created int
 }
 
-// cookFormulaToSubgraph creates an in-memory TemplateSubgraph from a resolved formula.
+// CookFormulaToSubgraph creates an in-memory TemplateSubgraph from a resolved formula.
 // This is the ephemeral proto implementation - no database storage.
-// The returned subgraph can be passed directly to cloneSubgraph for instantiation.
-//
-//nolint:unparam // error return kept for API consistency with future error handling
-func cookFormulaToSubgraph(f *formula.Formula, protoID string) (*TemplateSubgraph, error) {
+// The returned subgraph can be passed directly to CloneSubgraph for instantiation.
+func CookFormulaToSubgraph(f *formula.Formula, protoID string) (*MoleculeSubgraph, error) {
 	// Map step ID -> created issue
 	issueMap := make(map[string]*types.Issue)
 
@@ -473,16 +480,16 @@ func cookFormulaToSubgraph(f *formula.Formula, protoID string) (*TemplateSubgrap
 	issueMap[protoID] = rootIssue
 
 	// Collect issues for each step (use protoID as parent for step IDs)
-	// The unified collectSteps builds both issueMap and idMapping
+	// The unified CollectSteps builds both issueMap and idMapping
 	idMapping := make(map[string]string)
-	collectSteps(f.Steps, protoID, idMapping, issueMap, &issues, &deps, nil) // nil = keep labels on issues
+	CollectSteps(f.Steps, protoID, idMapping, issueMap, &issues, &deps, nil) // nil = keep labels on issues
 
 	// Collect dependencies from depends_on using the idMapping built above
 	for _, step := range f.Steps {
-		collectDependencies(step, idMapping, &deps)
+		CollectDependencies(step, idMapping, &deps)
 	}
 
-	return &TemplateSubgraph{
+	return &MoleculeSubgraph{
 		Root:         rootIssue,
 		Issues:       issues,
 		Dependencies: deps,
@@ -490,10 +497,10 @@ func cookFormulaToSubgraph(f *formula.Formula, protoID string) (*TemplateSubgrap
 	}, nil
 }
 
-// createGateIssue creates a gate issue for a step with a Gate field.
+// CreateGateIssue creates a gate issue for a step with a Gate field.
 // Gate issues have type=gate and block the step they guard.
 // Returns the gate issue and its ID.
-func createGateIssue(step *formula.Step, parentID string) *types.Issue {
+func CreateGateIssue(step *formula.Step, parentID string) *types.Issue {
 	if step.Gate == nil {
 		return nil
 	}
@@ -531,15 +538,15 @@ func createGateIssue(step *formula.Step, parentID string) *types.Issue {
 	}
 }
 
-// processStepToIssue converts a formula.Step to a types.Issue.
+// ProcessStepToIssue converts a formula.Step to a types.Issue.
 // The issue includes all fields including Labels populated from step.Labels and waits_for.
 // This is the shared core logic used by both DB-persisted and in-memory cooking.
-func processStepToIssue(step *formula.Step, parentID string) *types.Issue {
+func ProcessStepToIssue(step *formula.Step, parentID string) *types.Issue {
 	// Generate issue ID (formula-name.step-id)
 	issueID := fmt.Sprintf("%s.%s", parentID, step.ID)
 
 	// Determine issue type (children override to epic)
-	issueType := stepTypeToIssueType(step.Type)
+	issueType := StepTypeToIssueType(step.Type)
 	if len(step.Children) > 0 {
 		issueType = types.TypeEpic
 	}
@@ -577,7 +584,7 @@ func processStepToIssue(step *formula.Step, parentID string) *types.Issue {
 	return issue
 }
 
-// collectSteps collects issues and dependencies for steps and their children.
+// CollectSteps collects issues and dependencies for steps and their children.
 // This is the unified implementation used by both DB-persisted and in-memory cooking.
 //
 // Parameters:
@@ -585,7 +592,7 @@ func processStepToIssue(step *formula.Step, parentID string) *types.Issue {
 //   - issueMap: issue.ID → issue (optional, nil for DB path, populated for in-memory path)
 //   - labelHandler: callback for each label (if nil, labels stay on issue; if set, labels are
 //     extracted and issue.Labels is cleared - use for DB path)
-func collectSteps(steps []*formula.Step, parentID string,
+func CollectSteps(steps []*formula.Step, parentID string,
 	idMapping map[string]string,
 	issueMap map[string]*types.Issue,
 	issues *[]*types.Issue,
@@ -593,7 +600,7 @@ func collectSteps(steps []*formula.Step, parentID string,
 	labelHandler func(issueID, label string)) {
 
 	for _, step := range steps {
-		issue := processStepToIssue(step, parentID)
+		issue := ProcessStepToIssue(step, parentID)
 		*issues = append(*issues, issue)
 
 		// Build mappings
@@ -619,7 +626,7 @@ func collectSteps(steps []*formula.Step, parentID string,
 
 		// Create gate issue if step has a Gate (bd-7zka.2)
 		if step.Gate != nil {
-			gateIssue := createGateIssue(step, parentID)
+			gateIssue := CreateGateIssue(step, parentID)
 			*issues = append(*issues, gateIssue)
 
 			// Add gate to mapping (use gate-{step.ID} as key)
@@ -654,23 +661,22 @@ func collectSteps(steps []*formula.Step, parentID string,
 
 		// Recursively collect children
 		if len(step.Children) > 0 {
-			collectSteps(step.Children, issue.ID, idMapping, issueMap, issues, deps, labelHandler)
+			CollectSteps(step.Children, issue.ID, idMapping, issueMap, issues, deps, labelHandler)
 		}
 	}
 }
 
-
-// resolveAndCookFormula loads a formula by name, resolves it, applies all transformations,
+// ResolveAndCookFormula loads a formula by name, resolves it, applies all transformations,
 // and returns an in-memory TemplateSubgraph ready for instantiation.
 // This is the main entry point for ephemeral proto cooking.
-func resolveAndCookFormula(formulaName string, searchPaths []string) (*TemplateSubgraph, error) {
-	return resolveAndCookFormulaWithVars(formulaName, searchPaths, nil)
+func ResolveAndCookFormula(formulaName string, searchPaths []string) (*MoleculeSubgraph, error) {
+	return ResolveAndCookFormulaWithVars(formulaName, searchPaths, nil)
 }
 
-// resolveAndCookFormulaWithVars loads a formula and optionally filters steps by condition.
+// ResolveAndCookFormulaWithVars loads a formula and optionally filters steps by condition.
 // If conditionVars is provided, steps with conditions that evaluate to false are excluded.
 // Pass nil for conditionVars to include all steps (condition filtering skipped).
-func resolveAndCookFormulaWithVars(formulaName string, searchPaths []string, conditionVars map[string]string) (*TemplateSubgraph, error) {
+func ResolveAndCookFormulaWithVars(formulaName string, searchPaths []string, conditionVars map[string]string) (*MoleculeSubgraph, error) {
 	// Create parser with search paths
 	parser := formula.NewParser(searchPaths...)
 
@@ -752,12 +758,12 @@ func resolveAndCookFormulaWithVars(formulaName string, searchPaths []string, con
 	}
 
 	// Cook to in-memory subgraph, including variable definitions for default handling
-	return cookFormulaToSubgraphWithVars(resolved, resolved.Formula, resolved.Vars)
+	return CookFormulaToSubgraphWithVars(resolved, resolved.Formula, resolved.Vars)
 }
 
-// cookFormulaToSubgraphWithVars creates an in-memory subgraph with variable info attached
-func cookFormulaToSubgraphWithVars(f *formula.Formula, protoID string, vars map[string]*formula.VarDef) (*TemplateSubgraph, error) {
-	subgraph, err := cookFormulaToSubgraph(f, protoID)
+// CookFormulaToSubgraphWithVars creates an in-memory subgraph with variable info attached
+func CookFormulaToSubgraphWithVars(f *formula.Formula, protoID string, vars map[string]*formula.VarDef) (*MoleculeSubgraph, error) {
+	subgraph, err := CookFormulaToSubgraph(f, protoID)
 	if err != nil {
 		return nil, err
 	}
@@ -776,9 +782,11 @@ func cookFormulaToSubgraphWithVars(f *formula.Formula, protoID string, vars map[
 	return subgraph, nil
 }
 
-// cookFormula creates a proto bead from a resolved formula.
+// CookFormula creates a proto bead from a resolved formula.
 // protoID is the final ID for the proto (may include a prefix).
-func cookFormula(ctx context.Context, s storage.Storage, f *formula.Formula, protoID string) (*cookFormulaResult, error) {
+func CookFormula(ctx context.Context, s storage.Storage, f *formula.Formula, protoID string) (*CookFormulaResult, error) {
+	cliCtx := cli.Get()
+
 	if s == nil {
 		return nil, fmt.Errorf("no database connection")
 	}
@@ -828,20 +836,20 @@ func cookFormula(ctx context.Context, s storage.Storage, f *formula.Formula, pro
 
 	// Collect issues for each step (use protoID as parent for step IDs)
 	// Use labelHandler to extract labels for separate DB storage
-	collectSteps(f.Steps, protoID, idMapping, nil, &issues, &deps, func(issueID, label string) {
+	CollectSteps(f.Steps, protoID, idMapping, nil, &issues, &deps, func(issueID, label string) {
 		labels = append(labels, struct{ issueID, label string }{issueID, label})
 	})
 
 	// Collect dependencies from depends_on
 	for _, step := range f.Steps {
-		collectDependencies(step, idMapping, &deps)
+		CollectDependencies(step, idMapping, &deps)
 	}
 
 	// Create all issues using batch with skip prefix validation
 	opts := sqlite.BatchCreateOptions{
 		SkipPrefixValidation: true, // Molecules use mol-* prefix
 	}
-	if err := sqliteStore.CreateIssuesWithFullOptions(ctx, issues, actor, opts); err != nil {
+	if err := sqliteStore.CreateIssuesWithFullOptions(ctx, issues, cliCtx.GetActor(), opts); err != nil {
 		return nil, fmt.Errorf("failed to create issues: %w", err)
 	}
 
@@ -852,14 +860,14 @@ func cookFormula(ctx context.Context, s storage.Storage, f *formula.Formula, pro
 	err := s.RunInTransaction(ctx, func(tx storage.Transaction) error {
 		// Add labels
 		for _, l := range labels {
-			if err := tx.AddLabel(ctx, l.issueID, l.label, actor); err != nil {
+			if err := tx.AddLabel(ctx, l.issueID, l.label, cliCtx.GetActor()); err != nil {
 				return fmt.Errorf("failed to add label %s to %s: %w", l.label, l.issueID, err)
 			}
 		}
 
 		// Add dependencies
 		for _, dep := range deps {
-			if err := tx.AddDependency(ctx, dep, actor); err != nil {
+			if err := tx.AddDependency(ctx, dep, cliCtx.GetActor()); err != nil {
 				return fmt.Errorf("failed to create dependency: %w", err)
 			}
 		}
@@ -883,15 +891,15 @@ func cookFormula(ctx context.Context, s storage.Storage, f *formula.Formula, pro
 		return nil, err
 	}
 
-	return &cookFormulaResult{
+	return &CookFormulaResult{
 		ProtoID: protoID,
 		Created: len(issues),
 	}, nil
 }
 
-// collectDependencies collects blocking dependencies from depends_on, needs, and waits_for fields.
+// CollectDependencies collects blocking dependencies from depends_on, needs, and waits_for fields.
 // This is the shared implementation used by both DB-persisted and in-memory subgraph cooking.
-func collectDependencies(step *formula.Step, idMapping map[string]string, deps *[]*types.Dependency) {
+func CollectDependencies(step *formula.Step, idMapping map[string]string, deps *[]*types.Dependency) {
 	issueID := idMapping[step.ID]
 
 	// Process depends_on field
@@ -954,14 +962,14 @@ func collectDependencies(step *formula.Step, idMapping map[string]string, deps *
 
 	// Recursively handle children
 	for _, child := range step.Children {
-		collectDependencies(child, idMapping, deps)
+		CollectDependencies(child, idMapping, deps)
 	}
 }
 
-// deleteProtoSubgraph deletes a proto and all its children.
-func deleteProtoSubgraph(ctx context.Context, s storage.Storage, protoID string) error {
+// DeleteProtoSubgraph deletes a proto and all its children.
+func DeleteProtoSubgraph(ctx context.Context, s storage.Storage, protoID string) error {
 	// Load the subgraph
-	subgraph, err := loadTemplateSubgraph(ctx, s, protoID)
+	subgraph, err := template.LoadSubgraph(ctx, s, protoID)
 	if err != nil {
 		return fmt.Errorf("load proto: %w", err)
 	}
@@ -978,8 +986,8 @@ func deleteProtoSubgraph(ctx context.Context, s storage.Storage, protoID string)
 	})
 }
 
-// printFormulaSteps prints steps in a tree format.
-func printFormulaSteps(steps []*formula.Step, indent string) {
+// PrintFormulaSteps prints steps in a tree format.
+func PrintFormulaSteps(steps []*formula.Step, indent string) {
 	for i, step := range steps {
 		connector := "├──"
 		if i == len(steps)-1 {
@@ -1023,33 +1031,35 @@ func printFormulaSteps(steps []*formula.Step, indent string) {
 			} else {
 				childIndent += "│   "
 			}
-			printFormulaSteps(step.Children, childIndent)
+			PrintFormulaSteps(step.Children, childIndent)
 		}
 	}
 }
 
-// substituteFormulaVars substitutes {{variable}} placeholders in a formula.
+// SubstituteFormulaVars substitutes {{variable}} placeholders in a formula.
 // This is used in runtime mode to fully resolve the formula before output.
-func substituteFormulaVars(f *formula.Formula, vars map[string]string) {
+func SubstituteFormulaVars(f *formula.Formula, vars map[string]string) {
 	// Substitute in top-level fields
-	f.Description = substituteVariables(f.Description, vars)
+	f.Description = template.SubstituteVariables(f.Description, vars)
 
 	// Substitute in all steps recursively
-	substituteStepVars(f.Steps, vars)
+	SubstituteStepVars(f.Steps, vars)
 }
 
-// substituteStepVars recursively substitutes variables in step titles and descriptions.
-func substituteStepVars(steps []*formula.Step, vars map[string]string) {
+// SubstituteStepVars recursively substitutes variables in step titles and descriptions.
+// Exported for testing.
+func SubstituteStepVars(steps []*formula.Step, vars map[string]string) {
 	for _, step := range steps {
-		step.Title = substituteVariables(step.Title, vars)
-		step.Description = substituteVariables(step.Description, vars)
+		step.Title = template.SubstituteVariables(step.Title, vars)
+		step.Description = template.SubstituteVariables(step.Description, vars)
 		if len(step.Children) > 0 {
-			substituteStepVars(step.Children, vars)
+			SubstituteStepVars(step.Children, vars)
 		}
 	}
 }
 
-func init() {
+// registerCookCmd registers the cook command
+func registerCookCmd() {
 	cookCmd.Flags().Bool("dry-run", false, "Preview what would be created")
 	cookCmd.Flags().Bool("persist", false, "Persist proto to database (legacy behavior)")
 	cookCmd.Flags().Bool("force", false, "Replace existing proto if it exists (requires --persist)")
@@ -1058,5 +1068,6 @@ func init() {
 	cookCmd.Flags().StringArray("var", []string{}, "Variable substitution (key=value), enables runtime mode")
 	cookCmd.Flags().String("mode", "", "Cooking mode: compile (keep placeholders) or runtime (substitute vars)")
 
-	rootCmd.AddCommand(cookCmd)
+	// cook is a top-level command, not under mol
+	// Will be registered with rootCmd via Register()
 }

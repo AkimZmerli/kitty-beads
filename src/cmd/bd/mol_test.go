@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 	"github.com/steveyegge/beads/internal/formula"
 	"github.com/steveyegge/beads/internal/storage/sqlite"
 	"github.com/steveyegge/beads/internal/types"
@@ -2105,7 +2106,7 @@ func TestAnalyzeMoleculeParallelNoBlocking(t *testing.T) {
 		},
 	}
 
-	analysis := analyzeMoleculeParallel(subgraph)
+	analysis := molcmd.AnalyzeMoleculeParallel(subgraph)
 
 	// All 3 should be ready (root + 2 children with no blocking deps)
 	if analysis.ReadySteps != 3 {
@@ -2174,7 +2175,7 @@ func TestAnalyzeMoleculeParallelWithBlocking(t *testing.T) {
 		},
 	}
 
-	analysis := analyzeMoleculeParallel(subgraph)
+	analysis := molcmd.AnalyzeMoleculeParallel(subgraph)
 
 	// Only root and step1 should be ready (step2 is blocked)
 	if analysis.ReadySteps != 2 {
@@ -2237,7 +2238,7 @@ func TestAnalyzeMoleculeParallelCompletedBlockers(t *testing.T) {
 		},
 	}
 
-	analysis := analyzeMoleculeParallel(subgraph)
+	analysis := molcmd.AnalyzeMoleculeParallel(subgraph)
 
 	step2Info := analysis.Steps[step2.ID]
 
@@ -2287,7 +2288,7 @@ func TestAnalyzeMoleculeParallelMultipleArms(t *testing.T) {
 		},
 	}
 
-	analysis := analyzeMoleculeParallel(subgraph)
+	analysis := molcmd.AnalyzeMoleculeParallel(subgraph)
 
 	// All 3 should be ready
 	if analysis.ReadySteps != 3 {
@@ -2350,7 +2351,7 @@ func TestCalculateBlockingDepths(t *testing.T) {
 		"step3": {"step2": true},
 	}
 
-	depths := calculateBlockingDepths(subgraph, blockedBy)
+	depths := molcmd.CalculateBlockingDepths(subgraph, blockedBy)
 
 	if depths["root"] != 0 {
 		t.Errorf("root depth = %d, want 0", depths["root"])
@@ -2606,7 +2607,7 @@ func TestCompoundMoleculeVisualization(t *testing.T) {
 	}
 }
 
-// TestFormatBondType tests the formatBondType helper function
+// TestFormatBondType tests the molcmd.FormatBondType helper function
 func TestFormatBondType(t *testing.T) {
 	tests := []struct {
 		bondType string
@@ -2622,8 +2623,8 @@ func TestFormatBondType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.bondType, func(t *testing.T) {
-			if got := formatBondType(tt.bondType); got != tt.expected {
-				t.Errorf("formatBondType(%q) = %q, want %q", tt.bondType, got, tt.expected)
+			if got := molcmd.FormatBondType(tt.bondType); got != tt.expected {
+				t.Errorf("molcmd.FormatBondType(%q) = %q, want %q", tt.bondType, got, tt.expected)
 			}
 		})
 	}
@@ -2671,7 +2672,7 @@ func TestPourRootTitleDescSubstitution(t *testing.T) {
 	}
 
 	// Cook the formula to a subgraph (in-memory, no DB)
-	subgraph, err := cookFormulaToSubgraphWithVars(f, f.Formula, f.Vars)
+	subgraph, err := molcmd.CookFormulaToSubgraphWithVars(f, f.Formula, f.Vars)
 	if err != nil {
 		t.Fatalf("Failed to cook formula: %v", err)
 	}
@@ -2749,7 +2750,7 @@ func TestPourRootTitleOnly(t *testing.T) {
 		},
 	}
 
-	subgraph, err := cookFormulaToSubgraphWithVars(f, f.Formula, f.Vars)
+	subgraph, err := molcmd.CookFormulaToSubgraphWithVars(f, f.Formula, f.Vars)
 	if err != nil {
 		t.Fatalf("Failed to cook formula: %v", err)
 	}
@@ -2805,7 +2806,7 @@ func TestPourRootNoVars(t *testing.T) {
 		},
 	}
 
-	subgraph, err := cookFormulaToSubgraphWithVars(f, f.Formula, f.Vars)
+	subgraph, err := molcmd.CookFormulaToSubgraphWithVars(f, f.Formula, f.Vars)
 	if err != nil {
 		t.Fatalf("Failed to cook formula: %v", err)
 	}

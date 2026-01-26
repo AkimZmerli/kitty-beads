@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	molcmd "github.com/steveyegge/beads/cmd/bd/commands/molecules"
 	"github.com/steveyegge/beads/internal/formula"
 	"github.com/steveyegge/beads/internal/types"
 )
@@ -100,7 +101,7 @@ func TestSubstituteFormulaVars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			substituteFormulaVars(tt.formula, tt.vars)
+			molcmd.SubstituteFormulaVars(tt.formula, tt.vars)
 
 			if tt.formula.Description != tt.wantDesc {
 				t.Errorf("Description = %q, want %q", tt.formula.Description, tt.wantDesc)
@@ -137,7 +138,7 @@ func TestSubstituteStepVarsRecursive(t *testing.T) {
 	}
 
 	vars := map[string]string{"name": "test"}
-	substituteStepVars(steps, vars)
+	molcmd.SubstituteStepVars(steps, vars)
 
 	// Check all levels got substituted
 	if steps[0].Title != "Root: test" {
@@ -165,7 +166,7 @@ func TestCompileTimeVsRuntimeMode(t *testing.T) {
 		},
 	}
 
-	// In compile-time mode, don't call substituteFormulaVars
+	// In compile-time mode, don't call molcmd.SubstituteFormulaVars
 	// Placeholders should remain intact
 	if compileFormula.Description != "Feature: {{name}}" {
 		t.Errorf("Compile-time: Description should preserve placeholder, got %q", compileFormula.Description)
@@ -179,7 +180,7 @@ func TestCompileTimeVsRuntimeMode(t *testing.T) {
 		},
 	}
 	vars := map[string]string{"name": "auth"}
-	substituteFormulaVars(runtimeFormula, vars)
+	molcmd.SubstituteFormulaVars(runtimeFormula, vars)
 
 	if runtimeFormula.Description != "Feature: auth" {
 		t.Errorf("Runtime: Description = %q, want %q", runtimeFormula.Description, "Feature: auth")
@@ -193,7 +194,7 @@ func TestCompileTimeVsRuntimeMode(t *testing.T) {
 // Gate Bead Tests (bd-4k3c: Gate beads created during cook)
 // =============================================================================
 
-// TestCreateGateIssue tests that createGateIssue creates proper gate issues
+// TestCreateGateIssue tests that molcmd.CreateGateIssue creates proper gate issues
 func TestCreateGateIssue(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -271,10 +272,10 @@ func TestCreateGateIssue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gateIssue := createGateIssue(tt.step, tt.parentID)
+			gateIssue := molcmd.CreateGateIssue(tt.step, tt.parentID)
 
 			if gateIssue == nil {
-				t.Fatal("createGateIssue returned nil")
+				t.Fatal("molcmd.CreateGateIssue returned nil")
 			}
 
 			if gateIssue.ID != tt.wantID {
@@ -307,7 +308,7 @@ func TestCreateGateIssue_NilGate(t *testing.T) {
 		Gate:  nil,
 	}
 
-	gateIssue := createGateIssue(step, "mol-test")
+	gateIssue := molcmd.CreateGateIssue(step, "mol-test")
 	if gateIssue != nil {
 		t.Errorf("Expected nil for step without Gate, got %+v", gateIssue)
 	}
@@ -338,7 +339,7 @@ func TestCreateGateIssue_Timeout(t *testing.T) {
 				},
 			}
 
-			gateIssue := createGateIssue(step, "mol-test")
+			gateIssue := molcmd.CreateGateIssue(step, "mol-test")
 			gotMinutes := int(gateIssue.Timeout.Minutes())
 
 			if gotMinutes != tt.wantMinutes {
@@ -376,9 +377,9 @@ func TestCookFormulaToSubgraph_GateBeads(t *testing.T) {
 		},
 	}
 
-	subgraph, err := cookFormulaToSubgraph(f, "mol-test-gate")
+	subgraph, err := molcmd.CookFormulaToSubgraph(f, "mol-test-gate")
 	if err != nil {
-		t.Fatalf("cookFormulaToSubgraph failed: %v", err)
+		t.Fatalf("molcmd.CookFormulaToSubgraph failed: %v", err)
 	}
 
 	// Should have: root + 3 steps + 1 gate = 5 issues
@@ -432,9 +433,9 @@ func TestCookFormulaToSubgraph_GateDependencies(t *testing.T) {
 		},
 	}
 
-	subgraph, err := cookFormulaToSubgraph(f, "mol-gate-deps")
+	subgraph, err := molcmd.CookFormulaToSubgraph(f, "mol-gate-deps")
 	if err != nil {
-		t.Fatalf("cookFormulaToSubgraph failed: %v", err)
+		t.Fatalf("molcmd.CookFormulaToSubgraph failed: %v", err)
 	}
 
 	// Find the blocking dependency: step -> gate
@@ -476,9 +477,9 @@ func TestCookFormulaToSubgraph_GateParentChild(t *testing.T) {
 		},
 	}
 
-	subgraph, err := cookFormulaToSubgraph(f, "mol-gate-parent")
+	subgraph, err := molcmd.CookFormulaToSubgraph(f, "mol-gate-parent")
 	if err != nil {
-		t.Fatalf("cookFormulaToSubgraph failed: %v", err)
+		t.Fatalf("molcmd.CookFormulaToSubgraph failed: %v", err)
 	}
 
 	// Find the parent-child dependency: gate -> root
