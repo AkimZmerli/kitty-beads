@@ -9,7 +9,7 @@ all: build
 # Build the server binary
 build:
 	@echo "Building kitty-beads server..."
-	cd src && go build -o ../bin/kitty-beads ./cmd/server
+	cd backend && go build -o ../bin/kitty-beads ./cmd/server
 
 # Run the server (builds first if needed)
 run: build
@@ -19,30 +19,33 @@ run: build
 # Run in development mode
 dev:
 	@echo "Starting server on http://localhost:8080"
-	cd src && go run ./cmd/server -port 8080
+	cd backend && go run ./cmd/server -port 8080
 
 # Build frontend (run after making frontend changes)
 build-frontend:
 	@echo "Building frontend..."
-	cd src/cmd/server/frontend && npm run build
+	cd frontend && npm run build
+	@echo "Copying dist to server for embedding..."
+	rm -rf backend/cmd/server/frontend-dist
+	cp -r frontend/dist backend/cmd/server/frontend-dist
 	@echo "Done! Refresh http://localhost:8080"
 
 # Install dependencies
 deps:
-	cd src && go mod download
+	cd backend && go mod download
 
 # Tidy dependencies
 tidy:
-	cd src && go mod tidy
+	cd backend && go mod tidy
 
 # Run tests
 test:
-	cd src && go test ./...
+	cd backend && go test ./...
 
 # Clean build artifacts
 clean:
 	rm -rf bin/
-	rm -rf src/cmd/server/kitty-beads
+	rm -rf backend/cmd/server/kitty-beads
 
 # Initialize beads in current directory (for testing)
 init-beads:
