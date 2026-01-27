@@ -1,12 +1,15 @@
 package middleware
 
 import (
+	"bufio"
 	"log"
+	"net"
 	"net/http"
 	"time"
 )
 
 // responseWriter wraps http.ResponseWriter to capture the status code.
+// It also implements http.Hijacker to support WebSocket upgrades.
 type responseWriter struct {
 	http.ResponseWriter
 	statusCode int
@@ -22,6 +25,14 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	n, err := rw.ResponseWriter.Write(b)
 	rw.written += int64(n)
 	return n, err
+}
+
+// Hijack implements http.Hijacker to support WebSocket connections.
+func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hijacker, ok := rw.ResponseWriter.(http.Hijacker); ok {
+		return hijacker.Hijack()
+	}
+	return nil, nil, http.ErrNotSupported
 }
 
 // Logger returns a middleware that logs HTTP requests with timing information.
