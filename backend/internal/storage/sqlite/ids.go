@@ -11,26 +11,6 @@ import (
 	"github.com/steveyegge/beads/internal/types"
 )
 
-// isValidBase36 checks if a string contains only base36 characters
-func isValidBase36(s string) bool {
-	for _, c := range s {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z')) {
-			return false
-		}
-	}
-	return true
-}
-
-// isValidHex checks if a string contains only hex characters
-func isValidHex(s string) bool {
-	for _, c := range s {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
-			return false
-		}
-	}
-	return true
-}
-
 // IsHierarchicalID checks if an issue ID is hierarchical (has a parent).
 // Hierarchical IDs have the format {parentID}.{N} where N is a numeric child suffix.
 // Returns true and the parent ID if hierarchical, false and empty string otherwise.

@@ -268,23 +268,6 @@ func findBeadsDirForWorkspace(workspacePath string) string {
 	return rc.BeadsDir
 }
 
-// getRepoContextForWorkspace returns the full RepoContext for a workspace.
-// This provides access to RepoRoot, BeadsDir, and worktree status for operations
-// that need more than just the .beads directory path.
-//
-// Returns an error if the workspace cannot be resolved or validated.
-func getRepoContextForWorkspace(workspacePath string) (*beads.RepoContext, error) {
-	rc, err := beads.GetRepoContextForWorkspace(workspacePath)
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve workspace context: %w", err)
-	}
-	// Validate the context is still valid (paths exist)
-	if err := rc.Validate(); err != nil {
-		return nil, fmt.Errorf("workspace context is stale: %w", err)
-	}
-	return rc, nil
-}
-
 // checkDaemonErrorFile checks for a daemon-error file in the .beads directory
 func checkDaemonErrorFile(socketPath string) string {
 	// Socket path is typically .beads/bd.sock, so get the parent dir

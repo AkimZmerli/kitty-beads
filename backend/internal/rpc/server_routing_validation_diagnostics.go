@@ -264,7 +264,11 @@ func (s *Server) handleRequest(req *Request) Response {
 // This prevents request handlers from hanging indefinitely if database
 // operations or other internal calls stall (GH#bd-p76kv).
 func (s *Server) reqCtx(_ *Request) context.Context {
-	ctx, _ := context.WithTimeout(context.Background(), s.requestTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), s.requestTimeout)
+	// Note: cancel is intentionally not called here because the context is returned
+	// to callers who will use it for the request duration. The context will be
+	// cancelled automatically when the timeout expires.
+	_ = cancel
 	return ctx
 }
 

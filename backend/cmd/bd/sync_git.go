@@ -373,22 +373,6 @@ func hasJSONLConflict() bool {
 	return hasJSONLConflict && !hasOtherConflict
 }
 
-// runGitRebaseContinue continues a rebase after resolving conflicts in the beads repository.
-// Uses RepoContext to ensure git commands run in the correct repository.
-func runGitRebaseContinue(ctx context.Context) error {
-	rc, err := beads.GetRepoContext()
-	if err != nil {
-		return fmt.Errorf("getting repo context: %w", err)
-	}
-
-	cmd := rc.GitCmd(ctx, "rebase", "--continue")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("git rebase --continue failed: %w\n%s", err, output)
-	}
-	return nil
-}
-
 // gitPull pulls from the current branch's upstream in the beads repository.
 // Returns nil if no remote configured (local-only mode).
 // If configuredRemote is non-empty, uses that instead of the branch's configured remote.
@@ -482,36 +466,6 @@ func gitPush(ctx context.Context, configuredRemote string) error {
 	return nil
 }
 
-// checkMergeDriverConfig checks if the merge driver is misconfigured in the beads repository.
-// Uses RepoContext to ensure git commands run in the correct repository.
-func checkMergeDriverConfig() {
-	rc, err := beads.GetRepoContext()
-	if err != nil {
-		return // No beads context, skip check
-	}
-
-	ctx := context.Background()
-	// Get current merge driver configuration
-	cmd := rc.GitCmd(ctx, "config", "merge.beads.driver")
-	output, err := cmd.Output()
-	if err != nil {
-		// No merge driver configured - this is OK, user may not need it
-		return
-	}
-
-	currentConfig := strings.TrimSpace(string(output))
-
-	// Check if using old incorrect placeholders
-	if strings.Contains(currentConfig, "%L") || strings.Contains(currentConfig, "%R") {
-		fmt.Fprintf(os.Stderr, "\n⚠️  WARNING: Git merge driver is misconfigured!\n")
-		fmt.Fprintf(os.Stderr, "   Current: %s\n", currentConfig)
-		fmt.Fprintf(os.Stderr, "   Problem: Git only supports %%O (base), %%A (current), %%B (other)\n")
-		fmt.Fprintf(os.Stderr, "            Using %%L/%%R will cause merge failures!\n")
-		fmt.Fprintf(os.Stderr, "\n   Fix now: bd doctor --fix\n")
-		fmt.Fprintf(os.Stderr, "   Or manually: git config merge.beads.driver \"bd merge %%A %%O %%A %%B\"\n\n")
-	}
-}
-
 // gitHasUncommittedBeadsChanges checks if .beads/issues.jsonl has uncommitted changes.
 // This detects the failure mode where a previous sync exported but failed before commit.
 // Returns true if the JSONL file has staged or unstaged changes (M or A status).
@@ -557,13 +511,6 @@ func parseGitStatusForBeadsChanges(statusOutput string) bool {
 	}
 
 	return false
-}
-
-// getDefaultBranch returns the default branch name (main or master) for origin remote.
-// Uses RepoContext to ensure git commands run in the correct repository.
-// Checks remote HEAD first, then falls back to checking if main/master exist.
-func getDefaultBranch(ctx context.Context) string {
-	return getDefaultBranchForRemote(ctx, "origin")
 }
 
 // getDefaultBranchForRemote returns the default branch name for a specific remote in the beads repository.

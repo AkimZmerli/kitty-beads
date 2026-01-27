@@ -21,11 +21,6 @@ const MoleculeLabel = molcmd.MoleculeLabel
 // Molecules and templates share the same subgraph structure
 type MoleculeSubgraph = molcmd.MoleculeSubgraph
 
-// molCmd is the parent command for molecule operations.
-// This variable provides backward compatibility for subcommand files.
-// The actual command is registered by molcmd.Register() in main.go.
-var molCmd = molcmd.GetMolCmd()
-
 // =============================================================================
 // Molecule Helper Functions
 // =============================================================================
@@ -36,17 +31,6 @@ var molCmd = molcmd.GetMolCmd()
 // The prefix parameter overrides the default issue prefix.
 func spawnMolecule(ctx context.Context, s storage.Storage, subgraph *MoleculeSubgraph, vars map[string]string, assignee string, actorName string, ephemeral bool, prefix string) (*InstantiateResult, error) {
 	return molcmd.SpawnMolecule(ctx, s, subgraph, vars, assignee, actorName, ephemeral, prefix)
-}
-
-// spawnMoleculeWithOptions creates new issues from the proto using CloneOptions.
-// This allows full control over dynamic bonding, variable substitution, and wisp phase.
-func spawnMoleculeWithOptions(ctx context.Context, s storage.Storage, subgraph *MoleculeSubgraph, opts CloneOptions) (*InstantiateResult, error) {
-	return molcmd.SpawnMoleculeWithOptions(ctx, s, subgraph, opts)
-}
-
-// printMoleculeTree prints the molecule structure as a tree
-func printMoleculeTree(subgraph *MoleculeSubgraph, parentID string, depth int, isRoot bool) {
-	printTemplateTree(subgraph, parentID, depth, isRoot)
 }
 
 // Note: init() removed - molCmd is now registered by molcmd.Register() in main.go

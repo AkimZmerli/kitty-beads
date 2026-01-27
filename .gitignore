@@ -1,4 +1,5 @@
 bin/
+server
 *.db
 .DS_Store
 beads-upstream/

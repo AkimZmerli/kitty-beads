@@ -24,11 +24,6 @@ var validRoutingModes = map[string]bool{
 	"contributor": true,
 }
 
-// validBranchNameRegex validates git branch names
-// Git branch names can't contain: space, ~, ^, :, \, ?, *, [
-// Can't start with -, can't end with ., can't contain ..
-var validBranchNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._/-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$`)
-
 // validActorRegex validates actor names (alphanumeric with dashes, underscores, dots, and @ for emails)
 var validActorRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._@-]*$`)
 

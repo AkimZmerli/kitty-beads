@@ -43,9 +43,8 @@ var staticFiles embed.FS
 var frontendFiles embed.FS
 
 var (
-	port      = flag.Int("port", 8080, "HTTP server port")
-	beadsDir  = flag.String("beads-dir", ".beads", "Path to .beads directory")
-	openBrowser = flag.Bool("open", false, "Open browser on start")
+	port     = flag.Int("port", 8080, "HTTP server port")
+	beadsDir = flag.String("beads-dir", ".beads", "Path to .beads directory")
 )
 
 // Server holds the HTTP server state
@@ -691,11 +690,4 @@ func computeKanbanStats(issues []*types.Issue) map[string]int {
 	}
 
 	return stats
-}
-
-func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
 }

@@ -160,10 +160,3 @@ func newSilentLogger() daemonLogger {
 	}
 }
 
-// newTestLoggerWithWriter creates a logger that writes to the given writer.
-// Use this when you need to capture and verify log output in tests.
-func newTestLoggerWithWriter(w io.Writer) daemonLogger {
-	return daemonLogger{
-		logger: slog.New(slog.NewTextHandler(w, nil)),
-	}
-}

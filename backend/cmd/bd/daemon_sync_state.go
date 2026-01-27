@@ -20,8 +20,6 @@ type SyncState struct {
 
 const (
 	syncStateFile = "sync-state.json"
-	// Backoff schedule: 30s, 1m, 2m, 5m, 10m, 30m (cap)
-	maxBackoffDuration = 30 * time.Minute
 	// Clear stale state after 24 hours
 	staleStateThreshold = 24 * time.Hour
 )

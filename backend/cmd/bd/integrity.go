@@ -1,80 +1,18 @@
 package main
 
 import (
-	"bytes"
-	"cmp"
 	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/steveyegge/beads/internal/storage"
 	"github.com/steveyegge/beads/internal/types"
 )
-
-// isJSONLNewer checks if JSONL file is newer than database file.
-// Returns true if JSONL is newer AND has different content, false otherwise.
-// This prevents false positives from daemon auto-export timestamp skew.
-//
-// NOTE: This uses computeDBHash which is more expensive than hasJSONLChanged.
-// For daemon auto-import, prefer hasJSONLChanged() which uses metadata-based
-// content tracking and is safe against git operations.
-func isJSONLNewer(jsonlPath string) bool {
-	return isJSONLNewerWithStore(jsonlPath, nil)
-}
-
-// isJSONLNewerWithStore is like isJSONLNewer but accepts an optional store parameter.
-// If st is nil, it will try to use the global store.
-func isJSONLNewerWithStore(jsonlPath string, st storage.Storage) bool {
-	jsonlInfo, jsonlStatErr := os.Stat(jsonlPath)
-	if jsonlStatErr != nil {
-		return false
-	}
-
-	beadsDir := filepath.Dir(jsonlPath)
-	dbPath := filepath.Join(beadsDir, "beads.db")
-	dbInfo, dbStatErr := os.Stat(dbPath)
-	if dbStatErr != nil {
-		return false
-	}
-
-	// Quick path: if DB is newer, JSONL is definitely not newer
-	if !jsonlInfo.ModTime().After(dbInfo.ModTime()) {
-		return false
-	}
-
-	// JSONL is newer by timestamp - but this could be due to daemon auto-export
-	// or clock skew. Use content-based comparison to determine if import is needed.
-	// If we can't determine content hash (e.g., store not available), conservatively
-	// assume JSONL is newer to trigger auto-import.
-	if st == nil {
-		if ensureStoreActive() != nil || store == nil {
-			return true // Conservative: can't check content, assume different
-		}
-		st = store
-	}
-
-	ctx := context.Background()
-	jsonlHash, err := computeJSONLHash(jsonlPath)
-	if err != nil {
-		return true // Conservative: can't read JSONL, assume different
-	}
-
-	dbHash, err := computeDBHash(ctx, st)
-	if err != nil {
-		return true // Conservative: can't read DB, assume different
-	}
-
-	// Compare hashes: if they match, JSONL and DB have same content
-	// despite timestamp difference (daemon auto-export case)
-	return jsonlHash != dbHash
-}
 
 // computeJSONLHash computes SHA256 hash of JSONL file content.
 // Returns hex-encoded hash string and any error encountered reading the file.
@@ -420,59 +358,4 @@ func dbNeedsExport(ctx context.Context, store storage.Storage, jsonlPath string)
 
 	// DB and JSONL appear to be in sync
 	return false, nil
-}
-
-// computeDBHash computes a content hash of the database by exporting to memory.
-// This is used to compare DB content with JSONL content without relying on timestamps.
-func computeDBHash(ctx context.Context, store storage.Storage) (string, error) {
-	// Get all issues from DB
-	issues, err := store.SearchIssues(ctx, "", types.IssueFilter{})
-	if err != nil {
-		return "", fmt.Errorf("failed to get issues: %w", err)
-	}
-
-	// Sort by ID for consistent hash
-	slices.SortFunc(issues, func(a, b *types.Issue) int {
-		return cmp.Compare(a.ID, b.ID)
-	})
-
-	// Populate dependencies
-	allDeps, err := store.GetAllDependencyRecords(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get dependencies: %w", err)
-	}
-	for _, issue := range issues {
-		issue.Dependencies = allDeps[issue.ID]
-	}
-
-	// Populate labels
-	for _, issue := range issues {
-		labels, err := store.GetLabels(ctx, issue.ID)
-		if err != nil {
-			return "", fmt.Errorf("failed to get labels for %s: %w", issue.ID, err)
-		}
-		issue.Labels = labels
-	}
-
-	// Populate comments
-	for _, issue := range issues {
-		comments, err := store.GetIssueComments(ctx, issue.ID)
-		if err != nil {
-			return "", fmt.Errorf("failed to get comments for %s: %w", issue.ID, err)
-		}
-		issue.Comments = comments
-	}
-
-	// Serialize to JSON and hash
-	var buf bytes.Buffer
-	encoder := json.NewEncoder(&buf)
-	for _, issue := range issues {
-		if err := encoder.Encode(issue); err != nil {
-			return "", fmt.Errorf("failed to encode issue %s: %w", issue.ID, err)
-		}
-	}
-
-	hasher := sha256.New()
-	hasher.Write(buf.Bytes())
-	return hex.EncodeToString(hasher.Sum(nil)), nil
 }

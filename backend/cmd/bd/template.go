@@ -20,10 +20,6 @@ import (
 // Deprecated: Use template.BeadsTemplateLabel from commands/shared/template instead
 const BeadsTemplateLabel = template.BeadsTemplateLabel
 
-// variablePattern matches {{variable}} placeholders
-// Deprecated: Use template.VariablePattern from commands/shared/template instead
-var variablePattern = template.VariablePattern
-
 // TemplateSubgraph holds a template epic and all its descendants
 // Deprecated: Use template.Subgraph from commands/shared/template instead
 type TemplateSubgraph = template.Subgraph
@@ -39,10 +35,6 @@ type CloneOptions = template.CloneOptions
 // IssueDetailsFromShow represents the response structure from daemon Show RPC
 // Deprecated: Use template.IssueDetailsFromShow from commands/shared/template instead
 type IssueDetailsFromShow = template.IssueDetailsFromShow
-
-// bondedIDPattern validates bonded IDs (alphanumeric, dash, underscore, dot)
-// Deprecated: Use template.BondedIDPattern from commands/shared/template instead
-var bondedIDPattern = template.BondedIDPattern
 
 var templateCmd = &cobra.Command{
 	Use:        "template",
@@ -398,18 +390,6 @@ func extractVariables(text string) []string {
 // Deprecated: Use template.ExtractAllVariables from commands/shared/template instead
 func extractAllVariables(subgraph *TemplateSubgraph) []string {
 	return template.ExtractAllVariables(subgraph)
-}
-
-// extractRequiredVariables returns only variables that don't have defaults.
-// Deprecated: Use template.ExtractRequiredVariables from commands/shared/template instead
-func extractRequiredVariables(subgraph *TemplateSubgraph) []string {
-	return template.ExtractRequiredVariables(subgraph)
-}
-
-// applyVariableDefaults merges formula default values with provided variables.
-// Deprecated: Use template.ApplyVariableDefaults from commands/shared/template instead
-func applyVariableDefaults(vars map[string]string, subgraph *TemplateSubgraph) map[string]string {
-	return template.ApplyVariableDefaults(vars, subgraph)
 }
 
 // substituteVariables replaces {{variable}} with values

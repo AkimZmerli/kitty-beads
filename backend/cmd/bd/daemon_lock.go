@@ -133,56 +133,6 @@ func tryDaemonLock(beadsDir string) (running bool, pid int) {
 	return false, 0
 }
 
-// readDaemonLockInfo reads and parses the daemon lock file
-// Returns lock info if available, or error if file doesn't exist or can't be parsed
-func readDaemonLockInfo(beadsDir string) (*DaemonLockInfo, error) {
-	lockPath := filepath.Join(beadsDir, "daemon.lock")
-	
-	// #nosec G304 - controlled path from config
-	data, err := os.ReadFile(lockPath)
-	if err != nil {
-		return nil, err
-	}
-	
-	var lockInfo DaemonLockInfo
-	if err := json.Unmarshal(data, &lockInfo); err != nil {
-		// Try parsing as old format (plain PID)
-		var pid int
-		if _, err := fmt.Sscanf(string(data), "%d", &pid); err == nil {
-			return &DaemonLockInfo{PID: pid}, nil
-		}
-		return nil, fmt.Errorf("cannot parse lock file: %w", err)
-	}
-	
-	return &lockInfo, nil
-}
-
-// validateDaemonLock validates that the running daemon matches expected parameters
-// Returns error if validation fails (mismatch detected)
-func validateDaemonLock(beadsDir string, expectedDB string) error {
-	lockInfo, err := readDaemonLockInfo(beadsDir)
-	if err != nil {
-		// No lock file or can't read - not an error for validation
-		return nil
-	}
-	
-	// Validate database path if specified in lock
-	if lockInfo.Database != "" && expectedDB != "" {
-		if lockInfo.Database != expectedDB {
-			return fmt.Errorf("daemon database mismatch: daemon uses %s but expected %s", lockInfo.Database, expectedDB)
-		}
-	}
-	
-	// Version mismatch is a warning, not a hard error (handled elsewhere)
-	// But we return the info for caller to decide
-	if lockInfo.Version != "" && lockInfo.Version != Version {
-		// Not a hard error - version compatibility check happens via RPC
-		// This is just informational
-	}
-	
-	return nil
-}
-
 // checkPIDFile checks if a daemon is running by reading the PID file.
 // This is used for backward compatibility with pre-lock daemons.
 func checkPIDFile(beadsDir string) (running bool, pid int) {

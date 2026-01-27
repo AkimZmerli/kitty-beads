@@ -20,7 +20,7 @@
 | Phase 3-4 | Backend Vertical Slices | ✅ Done | 6 features wired to server (issues, kanban, labels, comments, dependencies, statistics) |
 | Phase 5 | CLI Reorganization | ✅ Done (80%) | 8/10 feature packages migrated; sync/issues stay in main |
 | Phase 6 | Frontend Vertical Slices | ✅ Done | Structure complete; D3/tldraw are feature additions |
-| Phase 7 | Final Cleanup | 🔶 In Progress | Remove dead code, update imports |
+| Phase 7 | Final Cleanup | ✅ Done | Dead code removed, imports cleaned, artifacts cleaned |
 
 ### Phase 5 CLI Status (Complete)
 
@@ -61,13 +61,13 @@ backend/
 │   │   ├── molecules/      ✅ (~6,000 LOC)
 │   │   └── shared/template/
 │   └── *.go                # 322 files still in main package
-├── features/               # Backend vertical slices (WIRED to server)
+├── features/               # Backend vertical slices (ALL WIRED to server)
 │   ├── comments/           ✅ handler.go, repository.go, service.go, types.go
-│   ├── compaction/         ⏳ scaffolded, not wired
+│   ├── compaction/         ✅ handler.go, repository.go, service.go, types.go
 │   ├── dependencies/       ✅ handler.go, repository.go, service.go, types.go
-│   ├── epics/              ⏳ scaffolded, not wired
-│   ├── export/             ⏳ scaffolded, not wired
-│   ├── gates/              ⏳ scaffolded, not wired
+│   ├── epics/              ✅ handler.go, repository.go, service.go, types.go
+│   ├── export/             ✅ handler.go, repository.go, service.go, types.go
+│   ├── gates/              ✅ handler.go, repository.go, service.go, types.go
 │   ├── issues/             ✅ handler.go, repository.go, service.go, types.go, rpc.go
 │   ├── kanban/             ✅ handler.go, repository.go, service.go, types.go
 │   ├── labels/             ✅ handler.go, repository.go, service.go, types.go
@@ -80,11 +80,11 @@ backend/
 ### Next Agent Handoff (2026-01-27)
 
 **What was completed this session:**
-- **Phase 2 & 3-4 COMPLETE**: Backend vertical slices wired to server
+- **Phase 2 & 3-4 COMPLETE**: ALL 10 backend vertical slices wired to server
   - Storage adapter fully integrated in `cmd/server/main.go`
-  - 6 feature handlers wired: issues, kanban, labels, comments, dependencies, statistics
+  - All 10 feature handlers wired: issues, kanban, labels, comments, dependencies, statistics, epics, gates, compaction, export
   - API routes registered for all features
-  - Old inline handlers (handleKanban) removed in favor of vertical slice handlers
+  - Old inline handlers (handleKanban, handleFeatures logic) removed in favor of vertical slice handlers
   - Build verified: `go build ./...` passes
 
 **API Routes now using vertical slices:**
@@ -95,19 +95,16 @@ backend/
 - `/api/dependencies/*`, `/api/dependents/*` → `features/dependencies/` handlers
 - `/api/stats/*` → `features/statistics/` handlers
 - `/api/ready`, `/api/blocked`, `/api/stale` → `features/kanban/` handlers
-
-**Remaining backend features to wire (lower priority):**
-- `features/epics/` - Epic status aggregation
-- `features/gates/` - Async coordination gates
-- `features/compaction/` - Background compaction jobs
-- `features/export/` - JSONL export functionality
+- `/api/epics/*` → `features/epics/` handlers
+- `/api/gates/*` → `features/gates/` handlers
+- `/api/compact/*` → `features/compaction/` handlers
+- `/api/export`, `/api/import`, `/api/sync/status` → `features/export/` handlers
 
 **Current focus: Phase 7 - Final Cleanup**
 
 1. Run `staticcheck` for dead code detection
 2. Remove empty/dead RPC handler files
 3. Update stale import paths
-4. Wire remaining 4 features (epics, gates, compaction, export) if needed
 
 **Future features (post-migration):**
 - D3 tree graph visualization

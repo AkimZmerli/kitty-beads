@@ -105,14 +105,6 @@ func formatRelativeTime(t time.Time) string {
 	return fmt.Sprintf("%dd ago", days)
 }
 
-// formatBoolIcon returns a styled checkmark or dash for boolean values
-func formatBoolIcon(enabled bool) string {
-	if enabled {
-		return ui.RenderPass(ui.IconPass)
-	}
-	return ui.RenderMuted("-")
-}
-
 // renderDaemonStatusIcon renders status with semantic styling
 func renderDaemonStatusIcon(status string) string {
 	switch status {

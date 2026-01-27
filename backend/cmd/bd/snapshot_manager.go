@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -476,17 +475,6 @@ func (sm *SnapshotManager) buildIDSet(path string) (map[string]bool, error) {
 	}
 
 	return result, nil
-}
-
-func (sm *SnapshotManager) jsonEquals(a, b string) bool {
-	var objA, objB map[string]interface{}
-	if err := json.Unmarshal([]byte(a), &objA); err != nil {
-		return false
-	}
-	if err := json.Unmarshal([]byte(b), &objB); err != nil {
-		return false
-	}
-	return reflect.DeepEqual(objA, objB)
 }
 
 func (sm *SnapshotManager) copyFile(src, dst string) error {

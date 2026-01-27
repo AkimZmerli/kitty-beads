@@ -137,14 +137,6 @@ func getActor() string {
 	return cmdCtx.Actor
 }
 
-// setActor updates the actor name in the CommandContext.
-func setActor(a string) {
-	if cmdCtx != nil {
-		cmdCtx.Actor = a
-	}
-	actor = a
-}
-
 // getDaemonClient returns the RPC client for daemon mode, or nil in direct mode.
 func getDaemonClient() *rpc.Client {
 	if shouldUseGlobals() {
@@ -159,22 +151,6 @@ func setDaemonClient(c *rpc.Client) {
 		cmdCtx.DaemonClient = c
 	}
 	daemonClient = c
-}
-
-// isJSONOutput returns true if JSON output mode is enabled.
-func isJSONOutput() bool {
-	if shouldUseGlobals() {
-		return jsonOutput
-	}
-	return cmdCtx.JSONOutput
-}
-
-// setJSONOutput updates the JSON output flag.
-func setJSONOutput(j bool) {
-	if cmdCtx != nil {
-		cmdCtx.JSONOutput = j
-	}
-	jsonOutput = j
 }
 
 // getDBPath returns the database path.
@@ -208,80 +184,6 @@ func getRootContext() context.Context {
 	return ctx
 }
 
-// setRootContext updates the root context and cancel function.
-func setRootContext(ctx context.Context, cancel context.CancelFunc) {
-	if cmdCtx != nil {
-		cmdCtx.RootCtx = ctx
-		cmdCtx.RootCancel = cancel
-	}
-	rootCtx = ctx
-	rootCancel = cancel
-}
-
-// getHookRunner returns the hook runner instance.
-func getHookRunner() *hooks.Runner {
-	if shouldUseGlobals() {
-		return hookRunner
-	}
-	return cmdCtx.HookRunner
-}
-
-// setHookRunner updates the hook runner.
-func setHookRunner(h *hooks.Runner) {
-	if cmdCtx != nil {
-		cmdCtx.HookRunner = h
-	}
-	hookRunner = h
-}
-
-// isAutoFlushEnabled returns true if auto-flush is enabled.
-func isAutoFlushEnabled() bool {
-	if shouldUseGlobals() {
-		return autoFlushEnabled
-	}
-	return cmdCtx.AutoFlushEnabled
-}
-
-// setAutoFlushEnabled updates the auto-flush flag.
-func setAutoFlushEnabled(enabled bool) {
-	if cmdCtx != nil {
-		cmdCtx.AutoFlushEnabled = enabled
-	}
-	autoFlushEnabled = enabled
-}
-
-// isAutoImportEnabled returns true if auto-import is enabled.
-func isAutoImportEnabled() bool {
-	if shouldUseGlobals() {
-		return autoImportEnabled
-	}
-	return cmdCtx.AutoImportEnabled
-}
-
-// setAutoImportEnabled updates the auto-import flag.
-func setAutoImportEnabled(enabled bool) {
-	if cmdCtx != nil {
-		cmdCtx.AutoImportEnabled = enabled
-	}
-	autoImportEnabled = enabled
-}
-
-// getFlushManager returns the flush manager instance.
-func getFlushManager() *FlushManager {
-	if shouldUseGlobals() {
-		return flushManager
-	}
-	return cmdCtx.FlushManager
-}
-
-// setFlushManager updates the flush manager.
-func setFlushManager(fm *FlushManager) {
-	if cmdCtx != nil {
-		cmdCtx.FlushManager = fm
-	}
-	flushManager = fm
-}
-
 // getDaemonStatus returns the current daemon status.
 func getDaemonStatus() DaemonStatus {
 	if shouldUseGlobals() {
@@ -296,54 +198,6 @@ func setDaemonStatus(ds DaemonStatus) {
 		cmdCtx.DaemonStatus = ds
 	}
 	daemonStatus = ds
-}
-
-// isNoDaemon returns true if daemon mode is disabled.
-func isNoDaemon() bool {
-	if shouldUseGlobals() {
-		return noDaemon
-	}
-	return cmdCtx.NoDaemon
-}
-
-// setNoDaemon updates the no-daemon flag.
-func setNoDaemon(nd bool) {
-	if cmdCtx != nil {
-		cmdCtx.NoDaemon = nd
-	}
-	noDaemon = nd
-}
-
-// isReadonlyMode returns true if read-only mode is enabled.
-func isReadonlyMode() bool {
-	if shouldUseGlobals() {
-		return readonlyMode
-	}
-	return cmdCtx.ReadonlyMode
-}
-
-// getLockTimeout returns the SQLite lock timeout.
-func getLockTimeout() time.Duration {
-	if shouldUseGlobals() {
-		return lockTimeout
-	}
-	return cmdCtx.LockTimeout
-}
-
-// isSkipFinalFlush returns true if final flush should be skipped.
-func isSkipFinalFlush() bool {
-	if shouldUseGlobals() {
-		return skipFinalFlush
-	}
-	return cmdCtx.SkipFinalFlush
-}
-
-// setSkipFinalFlush updates the skip final flush flag.
-func setSkipFinalFlush(skip bool) {
-	if cmdCtx != nil {
-		cmdCtx.SkipFinalFlush = skip
-	}
-	skipFinalFlush = skip
 }
 
 // lockStore acquires the store mutex for thread-safe access.
@@ -380,158 +234,12 @@ func setStoreActive(active bool) {
 	storeActive = active
 }
 
-// lockFlush acquires the flush mutex for thread-safe flush operations.
-func lockFlush() {
-	if cmdCtx != nil {
-		cmdCtx.FlushMutex.Lock()
-	} else {
-		flushMutex.Lock()
-	}
-}
-
-// unlockFlush releases the flush mutex.
-func unlockFlush() {
-	if cmdCtx != nil {
-		cmdCtx.FlushMutex.Unlock()
-	} else {
-		flushMutex.Unlock()
-	}
-}
-
-// isVerbose returns true if verbose mode is enabled.
-func isVerbose() bool {
+// isAutoImportEnabled returns true if auto-import is enabled.
+func isAutoImportEnabled() bool {
 	if shouldUseGlobals() {
-		return verboseFlag
+		return autoImportEnabled
 	}
-	return cmdCtx.Verbose
-}
-
-// isQuiet returns true if quiet mode is enabled.
-func isQuiet() bool {
-	if shouldUseGlobals() {
-		return quietFlag
-	}
-	return cmdCtx.Quiet
-}
-
-// isNoDb returns true if no-db mode is enabled.
-func isNoDb() bool {
-	if shouldUseGlobals() {
-		return noDb
-	}
-	return cmdCtx.NoDb
-}
-
-// setNoDb updates the no-db flag.
-func setNoDb(nd bool) {
-	if cmdCtx != nil {
-		cmdCtx.NoDb = nd
-	}
-	noDb = nd
-}
-
-// isSandboxMode returns true if sandbox mode is enabled.
-func isSandboxMode() bool {
-	if shouldUseGlobals() {
-		return sandboxMode
-	}
-	return cmdCtx.SandboxMode
-}
-
-// setSandboxMode updates the sandbox mode flag.
-func setSandboxMode(sm bool) {
-	if cmdCtx != nil {
-		cmdCtx.SandboxMode = sm
-	}
-	sandboxMode = sm
-}
-
-// isVersionUpgradeDetected returns true if a version upgrade was detected.
-func isVersionUpgradeDetected() bool {
-	if shouldUseGlobals() {
-		return versionUpgradeDetected
-	}
-	return cmdCtx.VersionUpgradeDetected
-}
-
-// setVersionUpgradeDetected updates the version upgrade detected flag.
-func setVersionUpgradeDetected(detected bool) {
-	if cmdCtx != nil {
-		cmdCtx.VersionUpgradeDetected = detected
-	}
-	versionUpgradeDetected = detected
-}
-
-// getPreviousVersion returns the previous bd version.
-func getPreviousVersion() string {
-	if shouldUseGlobals() {
-		return previousVersion
-	}
-	return cmdCtx.PreviousVersion
-}
-
-// setPreviousVersion updates the previous version.
-func setPreviousVersion(v string) {
-	if cmdCtx != nil {
-		cmdCtx.PreviousVersion = v
-	}
-	previousVersion = v
-}
-
-// isUpgradeAcknowledged returns true if the upgrade notification was shown.
-func isUpgradeAcknowledged() bool {
-	if shouldUseGlobals() {
-		return upgradeAcknowledged
-	}
-	return cmdCtx.UpgradeAcknowledged
-}
-
-// setUpgradeAcknowledged updates the upgrade acknowledged flag.
-func setUpgradeAcknowledged(ack bool) {
-	if cmdCtx != nil {
-		cmdCtx.UpgradeAcknowledged = ack
-	}
-	upgradeAcknowledged = ack
-}
-
-// getProfileFile returns the CPU profile file handle.
-func getProfileFile() *os.File {
-	if shouldUseGlobals() {
-		return profileFile
-	}
-	return cmdCtx.ProfileFile
-}
-
-// setProfileFile updates the CPU profile file handle.
-func setProfileFile(f *os.File) {
-	if cmdCtx != nil {
-		cmdCtx.ProfileFile = f
-	}
-	profileFile = f
-}
-
-// getTraceFile returns the trace file handle.
-func getTraceFile() *os.File {
-	if shouldUseGlobals() {
-		return traceFile
-	}
-	return cmdCtx.TraceFile
-}
-
-// setTraceFile updates the trace file handle.
-func setTraceFile(f *os.File) {
-	if cmdCtx != nil {
-		cmdCtx.TraceFile = f
-	}
-	traceFile = f
-}
-
-// isAllowStale returns true if staleness checks should be skipped.
-func isAllowStale() bool {
-	if shouldUseGlobals() {
-		return allowStale
-	}
-	return cmdCtx.AllowStale
+	return cmdCtx.AutoImportEnabled
 }
 
 // syncCommandContext copies all legacy global values to the CommandContext.

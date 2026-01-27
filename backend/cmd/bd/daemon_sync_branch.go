@@ -126,16 +126,6 @@ func syncBranchCommitAndPushWithOptions(ctx context.Context, store storage.Stora
 	return true, nil
 }
 
-// getGitRoot returns the git repository root directory
-func getGitRoot(ctx context.Context) (string, error) {
-	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to get git root: %w", err)
-	}
-	return strings.TrimSpace(string(output)), nil
-}
-
 // gitHasChangesInWorktree checks if there are changes in the worktree
 func gitHasChangesInWorktree(ctx context.Context, worktreePath, filePath string) (bool, error) {
 	// Make filePath relative to worktree

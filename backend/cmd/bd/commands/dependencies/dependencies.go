@@ -451,12 +451,10 @@ Examples:
 
 		// If daemon is running but store is nil, open direct connection
 		if cliCtx.GetDaemonClient() != nil && store == nil {
-			var err error
 			// Note: We need to get dbPath somehow - this is a limitation of the migration
 			// For now, we'll skip this case and rely on the daemon
 			cliCtx.FatalErrorRespectJSON("dep list requires direct storage access or daemon support")
 			return
-			_ = err // unreachable but prevents compiler error
 		}
 
 		direction, _ := cmd.Flags().GetString("direction")

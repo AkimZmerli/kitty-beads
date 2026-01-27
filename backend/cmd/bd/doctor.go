@@ -63,9 +63,6 @@ var (
 // ConfigKeyHintsDoctor is the config key for suppressing doctor hints
 const ConfigKeyHintsDoctor = "hints.doctor"
 
-// minSyncBranchHookVersion is the minimum hook version that supports sync-branch bypass (issue #532)
-const minSyncBranchHookVersion = "0.29.0"
-
 var doctorCmd = &cobra.Command{
 	Use:     "doctor [path]",
 	GroupID: "maint",

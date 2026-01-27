@@ -965,13 +965,6 @@ func parseTime(s string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("unsupported date format: %q (use YYYY-MM-DD or RFC3339)", s)
 }
 
-func strValue(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
-}
-
 func updatesFromArgs(a UpdateArgs) (map[string]interface{}, error) {
 	u := map[string]interface{}{}
 	if a.Title != nil {
