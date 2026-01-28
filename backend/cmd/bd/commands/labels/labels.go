@@ -1,0 +1,355 @@
+// Package labels implements the bd CLI label management commands.
+package labels
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"sort"
+	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/steveyegge/beads/cmd/bd/cli"
+	"github.com/steveyegge/beads/internal/rpc"
+	"github.com/steveyegge/beads/internal/types"
+	"github.com/steveyegge/beads/internal/ui"
+)
+
+var labelCmd = &cobra.Command{
+	Use:     "label",
+	GroupID: "issues",
+	Short:   "Manage issue labels",
+}
+
+// Helper function to process label operations for multiple issues
+func processBatchLabelOperation(issueIDs []string, label string, operation string, jsonOut bool,
+	daemonFunc func(string, string) error, storeFunc func(context.Context, string, string, string) error) {
+	ctx := cli.Get().GetRootCtx()
+	cliCtx := cli.Get()
+	results := []map[string]interface{}{}
+
+	for _, issueID := range issueIDs {
+		var err error
+		if cliCtx.GetDaemonClient() != nil {
+			err = daemonFunc(issueID, label)
+		} else {
+			err = storeFunc(ctx, issueID, label, cliCtx.GetActor())
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error %s label %s %s: %v\n", operation, operation, issueID, err)
+			continue
+		}
+		if jsonOut {
+			results = append(results, map[string]interface{}{
+				"status":   operation,
+				"issue_id": issueID,
+				"label":    label,
+			})
+		} else {
+			verb := "Added"
+			prep := "to"
+			if operation == "removed" {
+				verb = "Removed"
+				prep = "from"
+			}
+			fmt.Printf("%s %s label '%s' %s %s\n", ui.RenderPass("✓"), verb, label, prep, issueID)
+		}
+	}
+
+	if len(issueIDs) > 0 && cliCtx.GetDaemonClient() == nil {
+		cliCtx.MarkDirty()
+	}
+
+	if jsonOut && len(results) > 0 {
+		cliCtx.OutputJSON(results)
+	}
+}
+
+func parseLabelArgs(args []string) (issueIDs []string, label string) {
+	label = args[len(args)-1]
+	issueIDs = args[:len(args)-1]
+	return
+}
+
+//nolint:dupl // labelAddCmd and labelRemoveCmd are similar but serve different operations
+var labelAddCmd = &cobra.Command{
+	Use:   "add [issue-id...] [label]",
+	Short: "Add a label to one or more issues",
+	Args:  cobra.MinimumNArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		cliCtx := cli.Get()
+		cliCtx.CheckReadonly("label add")
+
+		issueIDs, label := parseLabelArgs(args)
+
+		// Resolve partial IDs
+		ctx := cliCtx.GetRootCtx()
+		resolvedIDs := make([]string, 0, len(issueIDs))
+		for _, id := range issueIDs {
+			var fullID string
+			var err error
+			if cliCtx.GetDaemonClient() != nil {
+				resolveArgs := &rpc.ResolveIDArgs{ID: id}
+				resp, err := cliCtx.GetDaemonClient().ResolveID(resolveArgs)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error resolving %s: %v\n", id, err)
+					continue
+				}
+				if err := json.Unmarshal(resp.Data, &fullID); err != nil {
+					fmt.Fprintf(os.Stderr, "Error unmarshaling resolved ID: %v\n", err)
+					continue
+				}
+			} else {
+				fullID, err = cliCtx.ResolvePartialID(ctx, id)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error resolving %s: %v\n", id, err)
+					continue
+				}
+			}
+			resolvedIDs = append(resolvedIDs, fullID)
+		}
+		issueIDs = resolvedIDs
+
+		// Protect reserved label namespaces
+		// provides:* labels can only be added via 'bd ship' command
+		if strings.HasPrefix(label, "provides:") {
+			cliCtx.FatalErrorRespectJSON("'provides:' labels are reserved for cross-project capabilities. Hint: use 'bd ship %s' instead", strings.TrimPrefix(label, "provides:"))
+		}
+
+		processBatchLabelOperation(issueIDs, label, "added", cliCtx.IsJSONOutput(),
+			func(issueID, lbl string) error {
+				_, err := cliCtx.GetDaemonClient().AddLabel(&rpc.LabelAddArgs{ID: issueID, Label: lbl})
+				return err
+			},
+			func(ctx context.Context, issueID, lbl, act string) error {
+				return cliCtx.GetStore().AddLabel(ctx, issueID, lbl, act)
+			})
+	},
+}
+
+//nolint:dupl // labelRemoveCmd and labelAddCmd are similar but serve different operations
+var labelRemoveCmd = &cobra.Command{
+	Use:   "remove [issue-id...] [label]",
+	Short: "Remove a label from one or more issues",
+	Args:  cobra.MinimumNArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		cliCtx := cli.Get()
+		cliCtx.CheckReadonly("label remove")
+
+		issueIDs, label := parseLabelArgs(args)
+
+		// Resolve partial IDs
+		ctx := cliCtx.GetRootCtx()
+		resolvedIDs := make([]string, 0, len(issueIDs))
+		for _, id := range issueIDs {
+			var fullID string
+			var err error
+			if cliCtx.GetDaemonClient() != nil {
+				resolveArgs := &rpc.ResolveIDArgs{ID: id}
+				resp, err := cliCtx.GetDaemonClient().ResolveID(resolveArgs)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error resolving %s: %v\n", id, err)
+					continue
+				}
+				if err := json.Unmarshal(resp.Data, &fullID); err != nil {
+					fmt.Fprintf(os.Stderr, "Error unmarshaling resolved ID: %v\n", err)
+					continue
+				}
+			} else {
+				fullID, err = cliCtx.ResolvePartialID(ctx, id)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error resolving %s: %v\n", id, err)
+					continue
+				}
+			}
+			resolvedIDs = append(resolvedIDs, fullID)
+		}
+		issueIDs = resolvedIDs
+
+		processBatchLabelOperation(issueIDs, label, "removed", cliCtx.IsJSONOutput(),
+			func(issueID, lbl string) error {
+				_, err := cliCtx.GetDaemonClient().RemoveLabel(&rpc.LabelRemoveArgs{ID: issueID, Label: lbl})
+				return err
+			},
+			func(ctx context.Context, issueID, lbl, act string) error {
+				return cliCtx.GetStore().RemoveLabel(ctx, issueID, lbl, act)
+			})
+	},
+}
+
+var labelListCmd = &cobra.Command{
+	Use:   "list [issue-id]",
+	Short: "List labels for an issue",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		cliCtx := cli.Get()
+		ctx := cliCtx.GetRootCtx()
+
+		// Resolve partial ID first
+		var issueID string
+		if cliCtx.GetDaemonClient() != nil {
+			resolveArgs := &rpc.ResolveIDArgs{ID: args[0]}
+			resp, err := cliCtx.GetDaemonClient().ResolveID(resolveArgs)
+			if err != nil {
+				cliCtx.FatalErrorRespectJSON("resolving issue ID %s: %v", args[0], err)
+			}
+			if err := json.Unmarshal(resp.Data, &issueID); err != nil {
+				cliCtx.FatalErrorRespectJSON("unmarshaling resolved ID: %v", err)
+			}
+		} else {
+			var err error
+			issueID, err = cliCtx.ResolvePartialID(ctx, args[0])
+			if err != nil {
+				cliCtx.FatalErrorRespectJSON("resolving %s: %v", args[0], err)
+			}
+		}
+
+		var labels []string
+		// Use daemon if available
+		if cliCtx.GetDaemonClient() != nil {
+			resp, err := cliCtx.GetDaemonClient().Show(&rpc.ShowArgs{ID: issueID})
+			if err != nil {
+				cliCtx.FatalErrorRespectJSON("%v", err)
+			}
+			var issue types.Issue
+			if err := json.Unmarshal(resp.Data, &issue); err != nil {
+				cliCtx.FatalErrorRespectJSON("parsing response: %v", err)
+			}
+			labels = issue.Labels
+		} else {
+			// Direct mode
+			var err error
+			labels, err = cliCtx.GetStore().GetLabels(ctx, issueID)
+			if err != nil {
+				cliCtx.FatalErrorRespectJSON("%v", err)
+			}
+		}
+
+		if cliCtx.IsJSONOutput() {
+			// Always output array, even if empty
+			if labels == nil {
+				labels = []string{}
+			}
+			cliCtx.OutputJSON(labels)
+			return
+		}
+
+		if len(labels) == 0 {
+			fmt.Printf("\n%s has no labels\n", issueID)
+			return
+		}
+
+		fmt.Printf("\n%s Labels for %s:\n", ui.RenderAccent("🏷"), issueID)
+		for _, label := range labels {
+			fmt.Printf("  - %s\n", label)
+		}
+		fmt.Println()
+	},
+}
+
+var labelListAllCmd = &cobra.Command{
+	Use:   "list-all",
+	Short: "List all unique labels in the database",
+	Run: func(cmd *cobra.Command, args []string) {
+		cliCtx := cli.Get()
+		ctx := cliCtx.GetRootCtx()
+
+		var issues []*types.Issue
+		var err error
+
+		// Use daemon if available
+		if cliCtx.GetDaemonClient() != nil {
+			resp, err := cliCtx.GetDaemonClient().List(&rpc.ListArgs{})
+			if err != nil {
+				cliCtx.FatalErrorRespectJSON("%v", err)
+			}
+			if err := json.Unmarshal(resp.Data, &issues); err != nil {
+				cliCtx.FatalErrorRespectJSON("parsing response: %v", err)
+			}
+		} else {
+			// Direct mode
+			issues, err = cliCtx.GetStore().SearchIssues(ctx, "", types.IssueFilter{})
+			if err != nil {
+				cliCtx.FatalErrorRespectJSON("%v", err)
+			}
+		}
+
+		// Collect unique labels with counts
+		labelCounts := make(map[string]int)
+		for _, issue := range issues {
+			if cliCtx.GetDaemonClient() != nil {
+				// Labels are already in the issue from daemon
+				for _, label := range issue.Labels {
+					labelCounts[label]++
+				}
+			} else {
+				// Direct mode - need to fetch labels
+				labels, err := cliCtx.GetStore().GetLabels(ctx, issue.ID)
+				if err != nil {
+					cliCtx.FatalErrorRespectJSON("getting labels for %s: %v", issue.ID, err)
+				}
+				for _, label := range labels {
+					labelCounts[label]++
+				}
+			}
+		}
+
+		if len(labelCounts) == 0 {
+			if cliCtx.IsJSONOutput() {
+				cliCtx.OutputJSON([]string{})
+			} else {
+				fmt.Println("\nNo labels found in database")
+			}
+			return
+		}
+
+		// Sort labels alphabetically
+		labelsSlice := make([]string, 0, len(labelCounts))
+		for label := range labelCounts {
+			labelsSlice = append(labelsSlice, label)
+		}
+		sort.Strings(labelsSlice)
+
+		if cliCtx.IsJSONOutput() {
+			// Output as array of {label, count} objects
+			type labelInfo struct {
+				Label string `json:"label"`
+				Count int    `json:"count"`
+			}
+			result := make([]labelInfo, 0, len(labelsSlice))
+			for _, label := range labelsSlice {
+				result = append(result, labelInfo{
+					Label: label,
+					Count: labelCounts[label],
+				})
+			}
+			cliCtx.OutputJSON(result)
+			return
+		}
+
+		fmt.Printf("\n%s All labels (%d unique):\n", ui.RenderAccent("🏷"), len(labelsSlice))
+		// Find longest label for alignment
+		maxLen := 0
+		for _, label := range labelsSlice {
+			if len(label) > maxLen {
+				maxLen = len(label)
+			}
+		}
+		for _, label := range labelsSlice {
+			padding := strings.Repeat(" ", maxLen-len(label))
+			fmt.Printf("  %s%s  (%d issues)\n", label, padding, labelCounts[label])
+		}
+		fmt.Println()
+	},
+}
+
+// Register adds label commands to the root command.
+// Called from main package during initialization.
+func Register(root *cobra.Command) {
+	labelCmd.AddCommand(labelAddCmd)
+	labelCmd.AddCommand(labelRemoveCmd)
+	labelCmd.AddCommand(labelListCmd)
+	labelCmd.AddCommand(labelListAllCmd)
+	root.AddCommand(labelCmd)
+}
