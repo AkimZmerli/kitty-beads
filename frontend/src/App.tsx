@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Layout } from "./components/Layout";
+import { Layout } from "./layouts";
 import { Kanban } from "./pages/Kanban";
 import { Diagnostics } from "./pages/Diagnostics";
 import { Roadmap } from "./pages/Roadmap";
 import { IdeationPad } from "./pages/IdeationPad";
-import { TerminalProvider } from "./context/TerminalContext";
+import { TerminalProvider } from "./features/terminal";
 import { useFeatures } from "./hooks/useFeatures";
 
 const queryClient = new QueryClient({

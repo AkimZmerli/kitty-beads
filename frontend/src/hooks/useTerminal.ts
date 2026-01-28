@@ -1,3 +1,7 @@
-// Re-export useTerminal hook from context for clean imports
-export { useTerminal } from '../context/TerminalContext';
-export type { TerminalTab, TerminalState, TerminalContextValue } from '../context/TerminalContext';
+// Re-export useTerminal hook from feature for clean imports
+export { useTerminal } from "../features/terminal";
+export type {
+  TerminalTab,
+  TerminalState,
+  TerminalContextValue,
+} from "../features/terminal";

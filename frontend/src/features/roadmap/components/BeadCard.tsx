@@ -1,11 +1,11 @@
 import { useState } from "react";
-import type { RoadmapIssue } from "../../types/api";
+import type { RoadmapIssue } from "../../../types/api";
 import {
   parsePlan,
   formatCriteriaProgress,
   getPriorityColor,
   getPriorityIndicator,
-} from "../../lib/planParser";
+} from "../../../lib/planParser";
 import { CheckCircle2, HelpCircle, ListTodo } from "lucide-react";
 
 interface BeadCardProps {

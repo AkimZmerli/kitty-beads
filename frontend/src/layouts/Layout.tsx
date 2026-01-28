@@ -1,8 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { TerminalPanel } from "./terminal/TerminalPanel";
-import { useTerminal } from "../context/TerminalContext";
+import { TerminalPanel, useTerminal } from "../features/terminal";
 import type { Feature } from "../types/api";
 
 // Layout constants

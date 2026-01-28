@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRoadmap } from "../hooks/useRoadmap";
-import { BeadCard } from "../components/roadmap/BeadCard";
-import { MarkdownViewer } from "../components/MarkdownViewer";
+import { BeadCard } from "../features/roadmap";
+import { MarkdownViewer } from "../components/ui";
 import { getIssue } from "../lib/api";
 import type { Issue } from "../types/api";
 

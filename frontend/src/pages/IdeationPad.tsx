@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useIdeation } from "../hooks/useIdeation";
-import { MarkdownViewer } from "../components/MarkdownViewer";
+import { MarkdownViewer } from "../components/ui";
 import { extractSummary } from "../lib/planParser";
 import { ChevronLeft } from "lucide-react";
 
@@ -37,7 +37,7 @@ export function IdeationPad() {
       const original = issue?.design || issue?.description || "";
       setHasChanges(newContent !== original);
     },
-    [issue]
+    [issue],
   );
 
   const handleSave = useCallback(() => {
@@ -47,7 +47,7 @@ export function IdeationPad() {
   const handleCancel = useCallback(() => {
     if (hasChanges) {
       const confirmed = window.confirm(
-        "You have unsaved changes. Are you sure you want to discard them?"
+        "You have unsaved changes. Are you sure you want to discard them?",
       );
       if (!confirmed) return;
     }

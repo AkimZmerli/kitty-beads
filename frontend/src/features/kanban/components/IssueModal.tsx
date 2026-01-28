@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Issue } from "../../../types/api";
 import { getIssue } from "../../../lib/api";
-import { MarkdownViewer } from "../../../components/MarkdownViewer";
+import { MarkdownViewer } from "../../../components/ui";
 import type { IssueModalProps } from "../types";
 
 export function IssueModal({ issueId, onClose }: IssueModalProps) {

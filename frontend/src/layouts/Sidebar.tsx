@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { useTerminal } from "../context/TerminalContext";
+import { useTerminal } from "../features/terminal";
 import {
   GitBranch,
   Target,

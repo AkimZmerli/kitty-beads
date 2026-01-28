@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { useTerminal } from '../../context/TerminalContext';
+import { useTerminal } from '../context';
 import { TerminalTabs } from './TerminalTabs';
 import { TerminalInstance, type TerminalInstanceHandle } from './TerminalInstance';
 import { ResizeHandle } from './ResizeHandle';

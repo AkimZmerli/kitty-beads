@@ -5,7 +5,10 @@ interface MarkdownViewerProps {
   className?: string;
 }
 
-export function MarkdownViewer({ content, className = "" }: MarkdownViewerProps) {
+export function MarkdownViewer({
+  content,
+  className = "",
+}: MarkdownViewerProps) {
   return (
     <div className={`markdown-content ${className}`}>
       <Markdown>{content}</Markdown>

@@ -1,4 +1,4 @@
-import type { TerminalTab } from '../../context/TerminalContext';
+import type { TerminalTab } from '../types';
 
 interface TerminalTabsProps {
   tabs: TerminalTab[];
