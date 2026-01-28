@@ -5,6 +5,8 @@ import { Layout } from "./layouts";
 import { Kanban } from "./pages/Kanban";
 import { Diagnostics } from "./pages/Diagnostics";
 import { Roadmap } from "./pages/Roadmap";
+import { IconMap } from "./pages/IconMap";
+import { Editor } from "./pages/Editor";
 import { IdeationPad } from "./pages/IdeationPad";
 import { TerminalProvider } from "./features/terminal";
 import { useFeatures } from "./hooks/useFeatures";
@@ -84,13 +86,15 @@ function AppContent() {
           />
         }
       >
-        {/* Default: Tree Graph (currently Roadmap, will become D3 tree) */}
-        <Route index element={<Navigate to="/tree" replace />} />
+        {/* Default: Roadmap (icon map view) */}
+        <Route index element={<Navigate to="/roadmap" replace />} />
+        <Route path="/roadmap" element={<IconMap />} />
         <Route path="/tree" element={<Roadmap />} />
 
         {/* Core views */}
         <Route path="/kanban" element={<Kanban featureId={featureId} />} />
         <Route path="/whiteboard" element={<Whiteboard />} />
+        <Route path="/editor" element={<Editor />} />
 
         {/* Collaboration */}
         <Route path="/activity" element={<Activity />} />
