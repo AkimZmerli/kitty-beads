@@ -95,7 +95,7 @@ export function Sidebar() {
     >
       <SidebarSection title="Views" />
       <NavItem to="/roadmap" icon={Map} label="Roadmap" />
-      <NavItem to="/tree" icon={GitBranch} label="Tree Graph" />
+      <NavItem to="/tree" icon={GitBranch} label="Tree" />
       <NavItem to="/kanban" icon={Target} label="Kanban" />
       <NavItem to="/whiteboard" icon={PenTool} label="Whiteboard" />
 

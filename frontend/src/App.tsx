@@ -5,10 +5,12 @@ import { Layout } from "./layouts";
 import { Kanban } from "./pages/Kanban";
 import { Diagnostics } from "./pages/Diagnostics";
 import { Roadmap } from "./pages/Roadmap";
-import { IconMap } from "./pages/IconMap";
+import { TreeView } from "./pages/TreeView";
 import { Editor } from "./pages/Editor";
 import { IdeationPad } from "./pages/IdeationPad";
 import { TerminalProvider } from "./features/terminal";
+import { WhiteboardCanvas } from "./features/whiteboard";
+import { ActivityFeed } from "./features/activity";
 import { useFeatures } from "./hooks/useFeatures";
 
 const queryClient = new QueryClient({
@@ -19,34 +21,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-// Placeholder for Whiteboard (tldraw integration - future)
-function Whiteboard() {
-  return (
-    <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
-      <h2 className="text-neon-cyan text-2xl font-bold mb-4">Whiteboard</h2>
-      <p className="text-text-muted">
-        Freeform brainstorming canvas coming soon.
-      </p>
-      <p className="text-text-secondary mt-4 text-sm">
-        Will integrate tldraw for visual thinking.
-      </p>
-    </div>
-  );
-}
-
-// Placeholder for Activity Feed (future)
-function Activity() {
-  return (
-    <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
-      <h2 className="text-neon-cyan text-2xl font-bold mb-4">Activity Feed</h2>
-      <p className="text-text-muted">Collaboration activity log coming soon.</p>
-      <p className="text-text-secondary mt-4 text-sm">
-        Plan edits, status changes, comments, assignments.
-      </p>
-    </div>
-  );
-}
 
 function AppContent() {
   const { data, isLoading } = useFeatures();
@@ -86,18 +60,18 @@ function AppContent() {
           />
         }
       >
-        {/* Default: Roadmap (icon map view) */}
+        {/* Default: Roadmap (all beads view) */}
         <Route index element={<Navigate to="/roadmap" replace />} />
-        <Route path="/roadmap" element={<IconMap />} />
-        <Route path="/tree" element={<Roadmap />} />
+        <Route path="/roadmap" element={<Roadmap />} />
+        <Route path="/tree" element={<TreeView />} />
 
         {/* Core views */}
         <Route path="/kanban" element={<Kanban featureId={featureId} />} />
-        <Route path="/whiteboard" element={<Whiteboard />} />
+        <Route path="/whiteboard" element={<WhiteboardCanvas />} />
         <Route path="/editor" element={<Editor />} />
 
         {/* Collaboration */}
-        <Route path="/activity" element={<Activity />} />
+        <Route path="/activity" element={<ActivityFeed />} />
 
         {/* System */}
         <Route path="/diagnostics" element={<Diagnostics />} />
