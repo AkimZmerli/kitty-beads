@@ -193,6 +193,17 @@ body {
   color: var(--color-text-normal);
 }
 
+/* Mermaid diagram container */
+.mermaid-container {
+  display: flex;
+  justify-content: center;
+}
+
+.mermaid-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Custom select dropdown styling */
 select {
   background-image: none;
