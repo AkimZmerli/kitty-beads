@@ -1,30 +1,70 @@
 import { useState } from "react";
-import { Copy, Check, Trash2 } from "lucide-react";
+import { Save, Check, Trash2, Loader2 } from "lucide-react";
+import type { PngSaveResult } from "../hooks/useClaudeExport";
+
+type SaveState = "idle" | "saving" | "saved" | "error";
 
 interface WhiteboardToolbarProps {
-  onExportClaude: () => Promise<boolean>;
+  onSaveForClaude: () => Promise<PngSaveResult>;
   onClear: () => void;
   isDirty: boolean;
 }
 
 export function WhiteboardToolbar({
-  onExportClaude,
+  onSaveForClaude,
   onClear,
   isDirty,
 }: WhiteboardToolbarProps) {
-  const [copied, setCopied] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
 
-  const handleExport = async () => {
-    const success = await onExportClaude();
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleSave = async () => {
+    setSaveState("saving");
+    const result = await onSaveForClaude();
+    if (result.success) {
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 2000);
+    } else {
+      setSaveState("error");
+      setTimeout(() => setSaveState("idle"), 3000);
     }
   };
 
   const handleClear = () => {
     if (window.confirm("Are you sure you want to clear the whiteboard?")) {
       onClear();
+    }
+  };
+
+  const renderButtonContent = () => {
+    switch (saveState) {
+      case "saving":
+        return (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Saving...
+          </>
+        );
+      case "saved":
+        return (
+          <>
+            <Check className="w-4 h-4" />
+            Saved!
+          </>
+        );
+      case "error":
+        return (
+          <>
+            <Save className="w-4 h-4" />
+            Failed
+          </>
+        );
+      default:
+        return (
+          <>
+            <Save className="w-4 h-4" />
+            Save for Claude
+          </>
+        );
     }
   };
 
@@ -52,20 +92,17 @@ export function WhiteboardToolbar({
       </button>
 
       <button
-        onClick={handleExport}
-        className="flex items-center gap-2 px-4 py-1.5 bg-neon-cyan text-night-bg text-sm rounded-md hover:shadow-[0_0_12px_rgba(125,207,255,0.4)] transition-all font-medium"
+        onClick={handleSave}
+        disabled={saveState === "saving"}
+        className={`flex items-center gap-2 px-4 py-1.5 text-sm rounded-md transition-all font-medium ${
+          saveState === "error"
+            ? "bg-red-600 text-white"
+            : saveState === "saved"
+              ? "bg-green-600 text-white"
+              : "bg-neon-cyan text-night-bg hover:shadow-[0_0_12px_rgba(125,207,255,0.4)]"
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
       >
-        {copied ? (
-          <>
-            <Check className="w-4 h-4" />
-            Copied!
-          </>
-        ) : (
-          <>
-            <Copy className="w-4 h-4" />
-            Export to Claude
-          </>
-        )}
+        {renderButtonContent()}
       </button>
     </div>
   );

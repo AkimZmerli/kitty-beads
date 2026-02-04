@@ -11,7 +11,7 @@ const TOOLBAR_HEIGHT = 44; // Approximate toolbar height
 
 export function WhiteboardCanvas() {
   const { editor, isDirty, handleMount, clearCanvas } = useWhiteboard();
-  const { copyToClipboard } = useClaudeExport(editor);
+  const { exportPngToUserStorage } = useClaudeExport(editor);
 
   // Calculate available height: viewport - header - layout padding (top + bottom) - toolbar
   const canvasHeight = `calc(100vh - ${HEADER_HEIGHT}px - ${LAYOUT_PADDING * 2}px - ${TOOLBAR_HEIGHT}px)`;
@@ -19,7 +19,7 @@ export function WhiteboardCanvas() {
   return (
     <div className="flex flex-col bg-card-bg rounded-xl border border-neon-magenta overflow-hidden">
       <WhiteboardToolbar
-        onExportClaude={copyToClipboard}
+        onSaveForClaude={exportPngToUserStorage}
         onClear={clearCanvas}
         isDirty={isDirty}
       />
