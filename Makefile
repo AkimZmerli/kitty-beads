@@ -16,15 +16,23 @@ run: build
 	@echo "Starting kitty-beads server..."
 	./bin/kitty-beads -port 8080
 
-# Run in development mode
+# Run in development mode (backend only, serves pre-built frontend)
 dev:
 	@echo "Starting server on http://localhost:8080"
 	cd backend && go run ./cmd/server -port 8080
 
+# Run with frontend hot reload (backend + Vite dev server)
+dev-hot:
+	@echo "Starting backend on :8080 and frontend on :5173 (with hot reload)"
+	@echo "Open http://localhost:5173 for hot reload"
+	@trap 'kill 0' EXIT; \
+		(cd backend && go run ./cmd/server -port 8080) & \
+		(cd frontend && pnpm dev --host)
+
 # Build frontend (run after making frontend changes)
 build-frontend:
 	@echo "Building frontend..."
-	cd frontend && npm run build
+	cd frontend && pnpm build
 	@echo "Copying dist to server for embedding..."
 	rm -rf backend/cmd/server/frontend-dist
 	cp -r frontend/dist backend/cmd/server/frontend-dist
@@ -68,7 +76,8 @@ help:
 	@echo "Usage:"
 	@echo "  make build     - Build the server binary"
 	@echo "  make run       - Build and run the server"
-	@echo "  make dev       - Run in development mode"
+	@echo "  make dev       - Run backend only (serves pre-built frontend)"
+	@echo "  make dev-hot   - Run with frontend hot reload (use localhost:5173)"
 	@echo "  make deps      - Download dependencies"
 	@echo "  make tidy      - Tidy Go modules"
 	@echo "  make test      - Run tests"

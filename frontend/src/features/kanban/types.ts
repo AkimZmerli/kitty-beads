@@ -14,12 +14,22 @@ export interface LaneConfig {
 export interface KanbanCardProps {
   issue: IssueCard;
   onClick: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  isDragging?: boolean;
 }
 
 export interface KanbanLaneProps {
   config: LaneConfig;
   issues: IssueCard[];
   onCardClick: (issue: IssueCard) => void;
+  onDragStart?: (card: IssueCard) => void;
+  onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isDropTarget?: boolean;
+  draggedCardId?: string | null;
 }
 
 export interface IssueModalProps {

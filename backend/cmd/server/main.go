@@ -27,6 +27,7 @@ import (
 	"github.com/steveyegge/beads/features/export"
 	"github.com/steveyegge/beads/features/gates"
 	"github.com/steveyegge/beads/features/issues"
+	"github.com/steveyegge/beads/features/whiteboard"
 	"github.com/steveyegge/beads/features/kanban"
 	"github.com/steveyegge/beads/features/labels"
 	"github.com/steveyegge/beads/features/statistics"
@@ -61,6 +62,7 @@ type Server struct {
 	gatesHandler       *gates.HTTPHandler
 	compactionHandler  *compaction.HTTPHandler
 	exportHandler      *export.HTTPHandler
+	whiteboardHandler  *whiteboard.HTTPHandler
 }
 
 // Lane represents a kanban lane with issues
@@ -151,6 +153,7 @@ func main() {
 	gatesService := gates.NewService(adapter.Issues())
 	compactionService := compaction.NewService(store)
 	exportService := export.NewService(adapter.Export())
+	whiteboardService := whiteboard.NewServiceWithDB(rootDir, store.UnderlyingDB())
 
 	// Create HTTP handlers for all vertical slices
 	issueHandler := issues.NewHTTPHandler(issueService)
@@ -163,6 +166,7 @@ func main() {
 	gatesHandler := gates.NewHTTPHandler(gatesService)
 	compactionHandler := compaction.NewHTTPHandler(compactionService)
 	exportHandler := export.NewHTTPHandler(exportService)
+	whiteboardHandler := whiteboard.NewHTTPHandler(whiteboardService)
 
 	server := &Server{
 		store:              store,
@@ -177,6 +181,7 @@ func main() {
 		gatesHandler:       gatesHandler,
 		compactionHandler:  compactionHandler,
 		exportHandler:      exportHandler,
+		whiteboardHandler:  whiteboardHandler,
 	}
 
 	mux := http.NewServeMux()
@@ -236,6 +241,11 @@ func main() {
 	mux.HandleFunc("/api/export", server.exportHandler.HandleExport)
 	mux.HandleFunc("/api/import", server.exportHandler.HandleImport)
 	mux.HandleFunc("/api/sync/status", server.exportHandler.HandleSyncStatus)
+
+	// Whiteboard routes - using vertical slice handlers
+	mux.HandleFunc("/api/whiteboard/save", server.whiteboardHandler.HandleSave)
+	mux.HandleFunc("/api/whiteboard/user/save", server.whiteboardHandler.HandleUserSave)
+	mux.HandleFunc("/api/whiteboard/user/latest", server.whiteboardHandler.HandleUserLatest)
 
 	// WebSocket terminal (supports /api/terminal/{sessionId} for multi-tab)
 	mux.HandleFunc("/api/terminal/", server.handleTerminal)
