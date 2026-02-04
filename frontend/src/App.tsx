@@ -9,6 +9,10 @@ import { TreeView } from "./pages/TreeView";
 import { Editor } from "./pages/Editor";
 import { IdeationPad } from "./pages/IdeationPad";
 import { TerminalProvider } from "./features/terminal";
+import {
+  CommandPaletteProvider,
+  CommandPalette,
+} from "./features/command-palette";
 import { WhiteboardCanvas } from "./features/whiteboard";
 import { ActivityFeed } from "./features/activity";
 import { useFeatures } from "./hooks/useFeatures";
@@ -88,7 +92,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <TerminalProvider>
-          <AppContent />
+          <CommandPaletteProvider>
+            <CommandPalette />
+            <AppContent />
+          </CommandPaletteProvider>
         </TerminalProvider>
       </BrowserRouter>
     </QueryClientProvider>
