@@ -49,6 +49,7 @@ github.com/AkimZmerli/splitty/
 ├── messages.go           # Public tea.Msg types
 ├── persist.go            # Layout save/restore
 ├── presets.go            # Named layout presets
+├── logger.go             # Logging with charmbracelet/log
 ├── terminal/
 │   ├── pty.go            # PTY management (creack/pty)
 │   ├── buffer.go         # ANSI-aware terminal buffer
@@ -85,6 +86,7 @@ package splitty
 import (
     tea "github.com/charmbracelet/bubbletea"
     "github.com/charmbracelet/lipgloss"
+    "github.com/charmbracelet/log"
 )
 
 // Manager is the main Bubble Tea model for split pane management
@@ -145,6 +147,9 @@ func WithPreset(name string) Option
 
 // WithEnv sets additional environment variables for PTY sessions
 func WithEnv(env []string) Option
+
+// WithLogger sets a charmbracelet/log logger for debugging (default: nil/disabled)
+func WithLogger(logger *log.Logger) Option
 ```
 
 ### Manager Methods
@@ -343,6 +348,26 @@ func main() {
     )
 
     m := splitty.New(splitty.WithKeyMap(keys))
+
+    tea.NewProgram(m, tea.WithAltScreen()).Run()
+}
+```
+
+### Debug Logging
+
+```go
+func main() {
+    // Create a file logger for debugging
+    f, _ := os.OpenFile("splitty.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+    logger := log.NewWithOptions(f, log.Options{
+        ReportTimestamp: true,
+        Level:           log.DebugLevel,
+    })
+
+    m := splitty.New(
+        splitty.WithLogger(logger),
+        splitty.WithTheme(splitty.TokyoNight),
+    )
 
     tea.NewProgram(m, tea.WithAltScreen()).Run()
 }
@@ -647,6 +672,7 @@ require (
     github.com/charmbracelet/bubbletea v1.3.0
     github.com/charmbracelet/bubbles v0.20.0
     github.com/charmbracelet/lipgloss v1.0.0
+    github.com/charmbracelet/log v0.4.0
     github.com/creack/pty v1.1.21
     golang.org/x/term v0.27.0
 )

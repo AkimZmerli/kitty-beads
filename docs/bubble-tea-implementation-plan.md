@@ -6,6 +6,9 @@
 - Add `github.com/charmbracelet/bubbletea`
 - Add `github.com/charmbracelet/bubbles`
 - Add `github.com/charmbracelet/lipgloss`
+- Add `github.com/charmbracelet/glamour` (markdown rendering)
+- Add `github.com/charmbracelet/log` (structured logging)
+- Add `github.com/charmbracelet/harmonica` (spring animations)
 - Already have: `github.com/charmbracelet/huh`
 
 ### 1.2 Create TUI Package Structure
@@ -146,6 +149,47 @@ backend/internal/tui/
 
 ---
 
+## Phase 7: SSH Access (Wish)
+
+### 7.1 Implement `bd serve` Command
+- Start SSH server with Wish
+- Serve full TUI over SSH
+- Auto-generate host keys on first run
+
+```go
+// backend/cmd/bd/serve.go
+import (
+    "github.com/charmbracelet/wish"
+    "github.com/charmbracelet/wish/bubbletea"
+)
+
+func runServe(cmd *cobra.Command, args []string) error {
+    s, err := wish.NewServer(
+        wish.WithAddress(":2222"),
+        wish.WithHostKeyPath(".ssh/beads_host_key"),
+        wish.WithMiddleware(
+            bubbletea.Middleware(teaHandler),
+            logging.Middleware(),
+        ),
+    )
+    return s.ListenAndServe()
+}
+```
+
+### 7.2 SSH Features
+- Public key authentication
+- Per-user sessions
+- Shared team access to beads
+- Read-only guest mode
+
+### 7.3 Use Cases
+- Access beads from any machine: `ssh beads.local -p 2222`
+- Team collaboration without local install
+- Headless server management
+- Remote pairing sessions
+
+---
+
 ## Integration Checklist
 
 ### CLI Flags
@@ -154,6 +198,7 @@ backend/internal/tui/
 - [ ] `bd status --tui`
 - [ ] `bd tui` (new command)
 - [ ] `bd daemon --monitor`
+- [ ] `bd serve` (SSH server)
 
 ### Shared Components
 - [ ] Issue list with filtering
@@ -161,6 +206,9 @@ backend/internal/tui/
 - [ ] Keybinding help bar
 - [ ] Status/progress bars
 - [ ] Spinner for async ops
+- [ ] Markdown renderer (Glamour)
+- [ ] Structured logger (Log)
+- [ ] Animation helpers (Harmonica)
 
 ### Daemon Integration
 - [ ] RPC calls return tea.Cmd
@@ -181,6 +229,9 @@ backend/internal/tui/
 backend/internal/tui/common/keys.go
 backend/internal/tui/common/styles.go
 backend/internal/tui/common/messages.go
+backend/internal/tui/common/markdown.go    # Glamour markdown rendering
+backend/internal/tui/common/logger.go      # Charm log integration
+backend/internal/tui/common/animation.go   # Harmonica spring animations
 backend/internal/tui/components/issuelist/model.go
 backend/internal/tui/components/issuedetail/model.go
 backend/internal/tui/components/statusbar/model.go
@@ -189,6 +240,7 @@ backend/internal/tui/commands/graph/model.go
 backend/internal/tui/commands/status/model.go
 backend/internal/tui/commands/full/model.go
 backend/cmd/bd/tui.go
+backend/cmd/bd/serve.go                    # Wish SSH server
 ```
 
 ### Modified Files
@@ -198,7 +250,7 @@ backend/cmd/bd/graph.go     # Add --tui flag
 backend/cmd/bd/status.go    # Add --tui flag
 backend/cmd/bd/daemon.go    # Add --monitor flag
 backend/cmd/bd/create_form.go  # Add dep picker, preview
-backend/go.mod              # Add bubbletea, bubbles, lipgloss
+backend/go.mod              # Add bubbletea, bubbles, lipgloss, glamour, log, harmonica, wish
 ```
 
 ---
@@ -218,8 +270,9 @@ backend/go.mod              # Add bubbletea, bubbles, lipgloss
 ### Manual Testing
 - Native terminal (iTerm, Terminal.app)
 - xterm.js in browser
-- SSH sessions
+- SSH sessions (including via `bd serve`)
 - tmux/screen
+- Remote access via Wish SSH server
 
 ---
 
@@ -233,6 +286,7 @@ backend/go.mod              # Add bubbletea, bubbles, lipgloss
 | Phase 4 | Enhanced Create Form |
 | Phase 5 | Full TUI Mode |
 | Phase 6 | Daemon Monitor |
+| Phase 7 | SSH Access (Wish) |
 
 ---
 
@@ -243,6 +297,67 @@ require (
     github.com/charmbracelet/bubbletea v1.x
     github.com/charmbracelet/bubbles v0.x
     github.com/charmbracelet/lipgloss v1.x
-    github.com/charmbracelet/huh v0.x  // already have
+    github.com/charmbracelet/glamour v0.x   // markdown rendering
+    github.com/charmbracelet/log v0.4.x     // structured logging
+    github.com/charmbracelet/harmonica v0.x // spring animations
+    github.com/charmbracelet/huh v0.x       // already have
+    github.com/charmbracelet/wish v1.x      // SSH server (Phase 7)
 )
 ```
+
+---
+
+## Charmbracelet Library Usage
+
+### Glamour - Markdown Rendering
+Used for rendering issue descriptions, comments, and bead content in the TUI.
+
+```go
+// backend/internal/tui/common/markdown.go
+import "github.com/charmbracelet/glamour"
+
+func RenderMarkdown(content string) (string, error) {
+    return glamour.Render(content, "tokyo-night")
+}
+```
+
+**Integration points:**
+- Issue detail view: render description
+- `bd show <issue>` output
+- Comment rendering
+- Help text display
+
+### Log - Structured Logging
+Consistent, styled logging across all TUI operations.
+
+```go
+// backend/internal/tui/common/logger.go
+import "github.com/charmbracelet/log"
+
+var Logger = log.NewWithOptions(os.Stderr, log.Options{
+    ReportTimestamp: true,
+    Level:           log.InfoLevel,
+})
+```
+
+**Integration points:**
+- Debug TUI state transitions
+- PTY operations logging
+- Daemon monitor logs
+
+### Harmonica - Spring Animations
+Smooth transitions for pane focus, resizing, and UI feedback.
+
+```go
+// backend/internal/tui/common/animation.go
+import "github.com/charmbracelet/harmonica"
+
+// Create spring for smooth pane transitions
+spring := harmonica.NewSpring(harmonica.FPS(60), 6.0, 0.5)
+```
+
+**Integration points:**
+- Focus indicator transitions
+- Pane resize animations
+- List scroll smoothing
+- Progress bar animations
