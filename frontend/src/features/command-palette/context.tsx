@@ -12,10 +12,13 @@ const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(n
 
 export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
+  const openShortcuts = useCallback(() => setShowShortcuts(true), []);
+  const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
 
   // Keyboard shortcut: Cmd+K / Ctrl+K to toggle
   useEffect(() => {
@@ -30,11 +33,32 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggle]);
 
+  // Keyboard shortcut: ? to show shortcuts overlay (skip if in input/textarea)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "?") {
+        const target = e.target as HTMLElement;
+        const tagName = target.tagName.toLowerCase();
+        if (tagName === "input" || tagName === "textarea" || target.isContentEditable) {
+          return;
+        }
+        e.preventDefault();
+        setShowShortcuts(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const value: CommandPaletteContextValue = {
     isOpen,
     open,
     close,
     toggle,
+    showShortcuts,
+    openShortcuts,
+    closeShortcuts,
   };
 
   return (

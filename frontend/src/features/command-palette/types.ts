@@ -19,4 +19,7 @@ export interface CommandPaletteContextValue extends CommandPaletteState {
   open: () => void;
   close: () => void;
   toggle: () => void;
+  showShortcuts: boolean;
+  openShortcuts: () => void;
+  closeShortcuts: () => void;
 }

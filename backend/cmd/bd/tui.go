@@ -38,6 +38,12 @@ Themes:
   glacier       Arctic blue, cool tones
   sorbet        Warm pastel lavender and peach`,
 	Run: func(cmd *cobra.Command, args []string) {
+		beadsMode, _ := cmd.Flags().GetBool("beads")
+		if beadsMode {
+			runBeadsTUI()
+			return
+		}
+
 		preset, _ := cmd.Flags().GetString("preset")
 		layoutPath, _ := cmd.Flags().GetString("layout")
 		themeName, _ := cmd.Flags().GetString("theme")
@@ -86,5 +92,6 @@ func init() {
 	tuiCmd.Flags().String("preset", "", "Layout preset: single, dev, triple, quad")
 	tuiCmd.Flags().String("layout", "", "Path to save/restore layout JSON file")
 	tuiCmd.Flags().String("theme", "kitty-beads", "Color theme: kitty-beads, tokyo-night, nightshade, glacier, sorbet")
+	tuiCmd.Flags().Bool("beads", false, "Launch beads-specific TUI with tabbed Issues/Graph/Status views")
 	rootCmd.AddCommand(tuiCmd)
 }

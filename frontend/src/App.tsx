@@ -12,7 +12,9 @@ import { TerminalProvider } from "./features/terminal";
 import {
   CommandPaletteProvider,
   CommandPalette,
+  ShortcutsOverlay,
 } from "./features/command-palette";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { WhiteboardCanvas } from "./features/whiteboard";
 import { ActivityFeed } from "./features/activity";
 import { useFeatures } from "./hooks/useFeatures";
@@ -89,16 +91,19 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <TerminalProvider>
-          <CommandPaletteProvider>
-            <CommandPalette />
-            <AppContent />
-          </CommandPaletteProvider>
-        </TerminalProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <TerminalProvider>
+            <CommandPaletteProvider>
+              <CommandPalette />
+              <ShortcutsOverlay />
+              <AppContent />
+            </CommandPaletteProvider>
+          </TerminalProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
