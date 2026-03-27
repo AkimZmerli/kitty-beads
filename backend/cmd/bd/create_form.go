@@ -219,7 +219,12 @@ The form uses keyboard navigation:
 }
 
 func runCreateForm(cmd *cobra.Command) {
-	_ = cmd // cmd parameter required by cobra.Command.Run signature
+	tuiFlag, _ := cmd.Flags().GetBool("tui")
+	if tuiFlag {
+		runCreateFormTUI()
+		return
+	}
+
 	// Raw form input - will be populated by the form
 	raw := &createFormRawInput{}
 
@@ -409,5 +414,6 @@ func printCreatedIssue(issue *types.Issue) {
 
 func init() {
 	// Note: --json flag is defined as a persistent flag in main.go
+	createFormCmd.Flags().Bool("tui", false, "Use enhanced Bubble Tea TUI with dependency picker and preview")
 	rootCmd.AddCommand(createFormCmd)
 }

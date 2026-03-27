@@ -2,7 +2,7 @@ package common
 
 import (
 	"github.com/AkimZmerli/splitty"
-	"github.com/charmbracelet/lipgloss"
+	lipgloss "charm.land/lipgloss/v2"
 )
 
 // KittyBeadsTheme is a splitty Theme using the Tokyo Night colors

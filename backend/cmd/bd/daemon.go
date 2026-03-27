@@ -48,6 +48,12 @@ Common operations:
 
 Run 'bd daemon --help' to see all subcommands.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		monitor, _ := cmd.Flags().GetBool("monitor")
+		if monitor {
+			runDaemonMonitorTUI()
+			return
+		}
+
 		start, _ := cmd.Flags().GetBool("start")
 		stop, _ := cmd.Flags().GetBool("stop")
 		stopAll, _ := cmd.Flags().GetBool("stop-all")
@@ -270,6 +276,7 @@ func init() {
 	daemonCmd.Flags().Int("federation-port", 3306, "MySQL port for federation mode dolt sql-server")
 	daemonCmd.Flags().Int("remotesapi-port", 8080, "remotesapi port for peer-to-peer sync in federation mode")
 	daemonCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output JSON format")
+	daemonCmd.Flags().Bool("monitor", false, "Launch interactive TUI monitor")
 	rootCmd.AddCommand(daemonCmd)
 }
 

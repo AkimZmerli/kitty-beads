@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/AkimZmerli/splitty"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/beads/internal/tui/common"
 )
@@ -60,10 +60,7 @@ Themes:
 
 		m := splitty.New(opts...)
 
-		p := tea.NewProgram(m,
-			tea.WithAltScreen(),
-			tea.WithMouseCellMotion(),
-		)
+		p := tea.NewProgram(m)
 
 		finalModel, err := p.Run()
 		if err != nil {
