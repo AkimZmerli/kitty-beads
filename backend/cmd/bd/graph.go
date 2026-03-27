@@ -62,6 +62,16 @@ The graph shows execution order:
 Status icons: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
+		tuiFlag, _ := cmd.Flags().GetBool("tui")
+		if tuiFlag {
+			rootID := ""
+			if len(args) > 0 {
+				rootID = args[0]
+			}
+			runGraphTUI(rootID)
+			return
+		}
+
 		ctx := rootCtx
 
 		// Validate args
@@ -177,6 +187,7 @@ func init() {
 	graphCmd.Flags().BoolVar(&graphAll, "all", false, "Show graph for all open issues")
 	graphCmd.Flags().BoolVar(&graphCompact, "compact", false, "Tree format, one line per issue, more scannable")
 	graphCmd.Flags().BoolVar(&graphBox, "box", true, "ASCII boxes showing layers (default)")
+	graphCmd.Flags().Bool("tui", false, "Launch interactive TUI graph browser")
 	graphCmd.ValidArgsFunction = issueIDCompletion
 	rootCmd.AddCommand(graphCmd)
 }

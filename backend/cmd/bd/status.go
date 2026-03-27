@@ -60,6 +60,12 @@ Examples:
   bd status --assigned         # Show issues assigned to current user
   bd stats                     # Alias for bd status`,
 	Run: func(cmd *cobra.Command, args []string) {
+		tuiFlag, _ := cmd.Flags().GetBool("tui")
+		if tuiFlag {
+			runStatusTUI()
+			return
+		}
+
 		showAll, _ := cmd.Flags().GetBool("all")
 		showAssigned, _ := cmd.Flags().GetBool("assigned")
 		noActivity, _ := cmd.Flags().GetBool("no-activity")
@@ -343,6 +349,7 @@ func init() {
 	statusCmd.Flags().Bool("all", false, "Show all issues (default behavior)")
 	statusCmd.Flags().Bool("assigned", false, "Show issues assigned to current user")
 	statusCmd.Flags().Bool("no-activity", false, "Skip git activity tracking (faster)")
+	statusCmd.Flags().Bool("tui", false, "Launch interactive TUI dashboard")
 	// Note: --json flag is defined as a persistent flag in main.go, not here
 	rootCmd.AddCommand(statusCmd)
 }

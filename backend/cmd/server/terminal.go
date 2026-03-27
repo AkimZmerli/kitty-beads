@@ -14,11 +14,13 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
+	"github.com/steveyegge/beads/internal/terminal"
 )
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
+	ReadBufferSize:    4096,
+	WriteBufferSize:   4096,
+	EnableCompression: true,
 	CheckOrigin: func(r *http.Request) bool {
 		return true // Allow all origins for local dev
 	},
@@ -41,6 +43,7 @@ type TerminalSession struct {
 	ptmx   *os.File
 	cmd    *exec.Cmd
 	ws     *websocket.Conn
+	writer *terminal.BufferedTerminalWriter
 	mu     sync.Mutex
 	closed bool
 }
@@ -64,14 +67,30 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
-	// Get shell from environment or default
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "/bin/bash"
+	// Build command based on ?mode= query param
+	// mode=list  → bd list --tui
+	// mode=graph → bd graph --tui --all
+	// mode=tui   → bd tui
+	// mode=shell → interactive shell (default)
+	mode := r.URL.Query().Get("mode")
+	var cmdArgs []string
+	switch mode {
+	case "list":
+		cmdArgs = []string{"bd", "list", "--tui"}
+	case "graph":
+		cmdArgs = []string{"bd", "graph", "--tui", "--all"}
+	case "tui":
+		cmdArgs = []string{"bd", "tui"}
+	default:
+		shell := os.Getenv("SHELL")
+		if shell == "" {
+			shell = "/bin/bash"
+		}
+		cmdArgs = []string{shell}
 	}
 
 	// Create command
-	cmd := exec.Command(shell)
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...) // #nosec G204 -- args are from a controlled allow-list
 	cmd.Env = append(os.Environ(),
 		"TERM=xterm-256color",
 		"COLORTERM=truecolor",
@@ -89,10 +108,14 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bw := terminal.NewBufferedTerminalWriter(ws)
+	defer bw.Close()
+
 	session := &TerminalSession{
-		ptmx: ptmx,
-		cmd:  cmd,
-		ws:   ws,
+		ptmx:   ptmx,
+		cmd:    cmd,
+		ws:     ws,
+		writer: bw,
 	}
 	defer session.Close()
 
@@ -106,7 +129,7 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	session.readWebSocket()
 }
 
-// readPTY reads from PTY and sends to WebSocket
+// readPTY reads from PTY and sends to WebSocket via the buffered writer.
 func (ts *TerminalSession) readPTY() {
 	buf := make([]byte, 4096)
 	for {
@@ -121,16 +144,9 @@ func (ts *TerminalSession) readPTY() {
 			ts.mu.Unlock()
 			return
 		}
-
-		// Send output to WebSocket
-		data, _ := json.Marshal(string(buf[:n]))
-		err = ts.ws.WriteJSON(TerminalMessage{
-			Type: "output",
-			Data: data,
-		})
 		ts.mu.Unlock()
 
-		if err != nil {
+		if _, err := ts.writer.Write(buf[:n]); err != nil {
 			ts.Close()
 			return
 		}

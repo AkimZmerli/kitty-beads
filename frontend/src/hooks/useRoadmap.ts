@@ -81,11 +81,9 @@ export function useRoadmap() {
       const tree = buildIssueTree(issues);
 
       const openCount = issues.filter(
-        (i) => i.status === "open" || i.status === "in_progress"
+        (i) => i.status === "open" || i.status === "in_progress",
       ).length;
-      const completedCount = issues.filter(
-        (i) => i.status === "closed"
-      ).length;
+      const completedCount = issues.filter((i) => i.status === "closed").length;
 
       return {
         issues: tree,
@@ -95,5 +93,7 @@ export function useRoadmap() {
       };
     },
     staleTime: 5000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 }

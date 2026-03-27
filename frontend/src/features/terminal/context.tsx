@@ -10,7 +10,15 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import type { TerminalState, TerminalContextValue, TerminalTab } from "./types";
 import { MIN_HEIGHT, MAX_HEIGHT_PERCENT } from "./constants";
-import { generateTerminalId, getSavedHeight, saveHeight } from "./utils";
+import {
+  generateTerminalId,
+  getSavedHeight,
+  saveHeight,
+  getSavedTabs,
+  saveTabs,
+  getSavedActiveTabId,
+  saveActiveTabId,
+} from "./utils";
 
 const TerminalContext = createContext<TerminalContextValue | null>(null);
 
@@ -28,18 +36,46 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
     sendCommand: (cmd: string) => void;
   } | null>(null);
 
-  const [state, setState] = useState<TerminalState>({
-    isOpen: false,
-    tabs: [],
-    activeTabId: null,
-    panelHeight: getSavedHeight(),
-    isFullscreen: false,
+  const [state, setState] = useState<TerminalState>(() => {
+    const savedTabs = getSavedTabs();
+    const savedActiveTabId = getSavedActiveTabId();
+    if (savedTabs && savedTabs.length > 0) {
+      // Validate that the saved active tab still exists in the saved tabs list
+      const activeId =
+        savedActiveTabId && savedTabs.some((t) => t.id === savedActiveTabId)
+          ? savedActiveTabId
+          : savedTabs[0].id;
+      return {
+        isOpen: false,
+        tabs: savedTabs,
+        activeTabId: activeId,
+        panelHeight: getSavedHeight(),
+        isFullscreen: false,
+      };
+    }
+    return {
+      isOpen: false,
+      tabs: [],
+      activeTabId: null,
+      panelHeight: getSavedHeight(),
+      isFullscreen: false,
+    };
   });
 
   // Persist panel height to localStorage
   useEffect(() => {
     saveHeight(state.panelHeight);
   }, [state.panelHeight]);
+
+  // Persist tabs to localStorage
+  useEffect(() => {
+    saveTabs(state.tabs);
+  }, [state.tabs]);
+
+  // Persist active tab ID to localStorage
+  useEffect(() => {
+    saveActiveTabId(state.activeTabId);
+  }, [state.activeTabId]);
 
   const openPanel = useCallback(() => {
     setState((prev) => {
