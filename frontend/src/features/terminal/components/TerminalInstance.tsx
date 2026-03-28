@@ -48,6 +48,7 @@ export const TerminalInstance = forwardRef<TerminalInstanceHandle, TerminalInsta
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimeoutRef = useRef<number | null>(null);
     const outputBufferRef = useRef<string>('');
+    const intentionalCloseRef = useRef<boolean>(false);
     const queryClient = useQueryClient();
 
     // Expose sendCommand and focus methods
@@ -80,18 +81,16 @@ export const TerminalInstance = forwardRef<TerminalInstanceHandle, TerminalInsta
       if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      // In dev mode (port 5173), connect directly to backend on 8080
-      const host = window.location.port === '5173' ? 'localhost:8080' : window.location.host;
-      const ws = new WebSocket(`${protocol}//${host}/api/terminal/${sessionId}`);
+      const ws = new WebSocket(`${protocol}//${window.location.host}/api/terminal/${sessionId}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
+        intentionalCloseRef.current = false;
         // Clear any pending reconnect timeout
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
         }
-        xtermRef.current?.write('\x1b[32mConnected to terminal\x1b[0m\r\n');
         // Send initial size
         if (fitAddonRef.current && xtermRef.current) {
           const dims = fitAddonRef.current.proposeDimensions();
@@ -139,6 +138,7 @@ export const TerminalInstance = forwardRef<TerminalInstanceHandle, TerminalInsta
       };
 
       ws.onclose = () => {
+        if (intentionalCloseRef.current) return;
         xtermRef.current?.write('\r\n\x1b[31mDisconnected\x1b[0m\r\n');
         // Attempt reconnect after 3 seconds
         reconnectTimeoutRef.current = window.setTimeout(() => {
@@ -148,6 +148,7 @@ export const TerminalInstance = forwardRef<TerminalInstanceHandle, TerminalInsta
       };
 
       ws.onerror = () => {
+        if (intentionalCloseRef.current) return;
         xtermRef.current?.write('\x1b[31mConnection error\x1b[0m\r\n');
       };
     }, [sessionId, detectPatterns, onOutput]);
@@ -248,6 +249,7 @@ export const TerminalInstance = forwardRef<TerminalInstanceHandle, TerminalInsta
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
         }
+        intentionalCloseRef.current = true;
         wsRef.current?.close();
         term.dispose();
       };
