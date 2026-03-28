@@ -484,6 +484,36 @@ func RenderClosedLine(line string) string {
 	return StatusClosedStyle.Render(line)
 }
 
+// === Graph Neon Palette ===
+// Cyberpunk-style neon colors for dependency graph layers and borders.
+var neonLayerPalette = []lipgloss.Color{
+	"#00e5ff", // electric cyan  - layer 0 (ready)
+	"#a8ff3e", // neon green     - layer 1
+	"#ffe600", // bright yellow  - layer 2
+	"#ff8c00", // neon orange    - layer 3
+	"#ff007c", // hot magenta    - layer 4+
+}
+
+// NeonLayerStyle returns a bold neon style for a graph layer header.
+func NeonLayerStyle(idx int) lipgloss.Style {
+	color := neonLayerPalette[idx%len(neonLayerPalette)]
+	return lipgloss.NewStyle().Foreground(color).Bold(true)
+}
+
+// GraphBorderStyle returns a colored border style keyed to issue status.
+func GraphBorderStyle(status string) lipgloss.Style {
+	switch status {
+	case "in_progress":
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#ffb454"))
+	case "blocked":
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#ff4d7a"))
+	case "closed":
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d4d5c"))
+	default: // open
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#00c8e8"))
+	}
+}
+
 // BoldStyle for emphasis
 var BoldStyle = lipgloss.NewStyle().Bold(true)
 

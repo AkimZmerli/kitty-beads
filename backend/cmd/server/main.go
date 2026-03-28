@@ -44,8 +44,10 @@ var staticFiles embed.FS
 var frontendFiles embed.FS
 
 var (
-	port     = flag.Int("port", 8080, "HTTP server port")
+	port     = flag.Int("port", 8000, "HTTP server port")
 	beadsDir = flag.String("beads-dir", ".beads", "Path to .beads directory")
+	devMode  = flag.Bool("dev", false, "Dev mode: proxy frontend to Vite dev server")
+	viteURL  = flag.String("vite", "http://localhost:5173", "Vite dev server URL (used with -dev)")
 )
 
 // Server holds the HTTP server state
@@ -255,12 +257,18 @@ func main() {
 	staticFS, _ := fs.Sub(staticFiles, "static")
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
-	// Serve React frontend from embedded dist folder
-	frontendFS, _ := fs.Sub(frontendFiles, "frontend-dist")
-	mux.Handle("/assets/", http.FileServer(http.FS(frontendFS)))
-
-	// SPA fallback - serve index.html for all non-API routes
-	mux.HandleFunc("/", server.handleSPA(frontendFS))
+	if *devMode {
+		// Dev mode: proxy all frontend traffic to Vite for hot reload.
+		// Terminal WebSocket (/api/terminal) is already registered above and
+		// handled directly by Go — no proxy hop, no disconnect.
+		log.Printf("Dev mode: proxying frontend to %s", *viteURL)
+		mux.Handle("/", newDevProxy(*viteURL))
+	} else {
+		// Production: serve embedded pre-built frontend
+		frontendFS, _ := fs.Sub(frontendFiles, "frontend-dist")
+		mux.Handle("/assets/", http.FileServer(http.FS(frontendFS)))
+		mux.HandleFunc("/", server.handleSPA(frontendFS))
+	}
 
 	// Apply middleware chain
 	handler := middleware.Chain(

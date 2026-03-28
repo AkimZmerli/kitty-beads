@@ -1,10 +1,10 @@
 # Kitty-Beads Makefile
 # Beads issue tracker with Spec Kitty dashboard UI
 
-.PHONY: all build run clean deps test help
+.PHONY: all build run clean deps test help dev dev-prod
 
 # Default target
-all: build
+all: dev
 
 # Build the server binary
 build:
@@ -14,20 +14,20 @@ build:
 # Run the server (builds first if needed)
 run: build
 	@echo "Starting kitty-beads server..."
-	./bin/kitty-beads -port 8080
+	./bin/kitty-beads -port 8000
 
-# Run in development mode (backend only, serves pre-built frontend)
+# Dev mode: backend on :8000 proxies to Vite for hot reload.
+# Open http://localhost:8000 — terminal WebSocket goes direct to Go, no disconnect.
 dev:
-	@echo "Starting server on http://localhost:8080"
-	cd backend && go run ./cmd/server -port 8080
-
-# Run with frontend hot reload (backend + Vite dev server)
-dev-hot:
-	@echo "Starting backend on :8080 and frontend on :5173 (with hot reload)"
-	@echo "Open http://localhost:5173 for hot reload"
+	@echo "Starting kitty-beads on http://localhost:8000 (hot reload)"
 	@trap 'kill 0' EXIT; \
-		(cd backend && go run ./cmd/server -port 8080) & \
-		(cd frontend && pnpm dev --host)
+		(cd frontend && pnpm dev) & \
+		(cd backend && go run ./cmd/server -port 8000 -dev)
+
+# Production mode: backend only, serves pre-built embedded frontend
+dev-prod:
+	@echo "Starting server on http://localhost:8000 (pre-built frontend)"
+	cd backend && go run ./cmd/server -port 8000
 
 # Build frontend (run after making frontend changes)
 build-frontend:
