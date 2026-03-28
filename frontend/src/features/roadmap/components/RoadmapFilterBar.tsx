@@ -68,7 +68,7 @@ export function RoadmapFilterBar() {
         {searchQuery && (
           <button
             onClick={() => setSearchQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -81,7 +81,7 @@ export function RoadmapFilterBar() {
           <button
             key={filter}
             onClick={() => setFilter(filter)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
               activeFilter === filter
                 ? "bg-neon-cyan text-night-bg shadow-[0_0_10px_rgba(125,207,255,0.3)]"
                 : "text-text-normal hover:bg-night-bg-highlight"
@@ -125,7 +125,7 @@ export function RoadmapFilterBar() {
                   setGroupBy(option.value as GroupByOption);
                   setDropdownOpen(false);
                 }}
-                className={`w-full px-3 py-2 text-left flex items-center gap-3 hover:bg-night-bg-highlight transition-colors ${
+                className={`w-full px-3 py-2 text-left flex items-center gap-3 hover:bg-night-bg-highlight transition-colors cursor-pointer ${
                   groupBy === option.value ? "text-neon-cyan" : "text-text-normal"
                 }`}
               >

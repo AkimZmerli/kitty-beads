@@ -69,7 +69,7 @@ export function Header({
         {/* Terminal Button */}
         <button
           onClick={togglePanel}
-          className={`flex items-center gap-2 px-4 py-2 bg-terminal-bg text-terminal-text border rounded-md transition-all ${
+          className={`flex items-center gap-2 px-4 py-2 bg-terminal-bg text-terminal-text border rounded-md transition-all cursor-pointer ${
             isOpen
               ? "border-neon-cyan shadow-[0_0_10px_rgba(125,207,255,0.3)]"
               : "border-terminal-border hover:border-neon-cyan hover:shadow-[0_0_10px_rgba(125,207,255,0.2)]"
@@ -81,7 +81,9 @@ export function Header({
         </button>
 
         {/* Last Update */}
-        <div className="text-sm text-text-muted">{lastUpdate} | v0.0.1</div>
+        <div className="text-sm text-text-muted mr-4">
+          {lastUpdate} | v0.1.0
+        </div>
       </div>
     </header>
   );

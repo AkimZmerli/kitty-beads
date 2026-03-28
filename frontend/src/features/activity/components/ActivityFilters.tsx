@@ -34,7 +34,7 @@ export function ActivityFilters({
       </span>
       <button
         onClick={() => onTypesChange([])}
-        className={`px-3 py-1 text-sm rounded-md transition-colors ${
+        className={`px-3 py-1 text-sm rounded-md transition-colors cursor-pointer ${
           allSelected
             ? "bg-neon-cyan text-night-bg"
             : "bg-night-surface text-text-muted hover:text-text-primary"
@@ -46,7 +46,7 @@ export function ActivityFilters({
         <button
           key={type}
           onClick={() => toggleType(type)}
-          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+          className={`px-3 py-1 text-sm rounded-md transition-colors cursor-pointer ${
             selectedTypes.includes(type)
               ? "bg-neon-cyan text-night-bg"
               : "bg-night-surface text-text-muted hover:text-text-primary"
