@@ -190,7 +190,6 @@ export function TreeView() {
             document.body,
           )}
       </div>
-    </div>
 
       {/* Legend */}
       <div className="flex items-center gap-6 mb-6 text-xs text-text-muted">
