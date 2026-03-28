@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
-import { GitBranch, ChevronDown } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { GitBranch, ChevronDown, Check } from "lucide-react";
 import { useRoadmap } from "../hooks/useRoadmap";
 import { TreeGraph } from "../features/tree-graph";
 import type { RoadmapIssue } from "../types/api";
@@ -7,6 +8,10 @@ import type { RoadmapIssue } from "../types/api";
 export function TreeView() {
   const { data, isLoading, error } = useRoadmap();
   const [selectedEpicId, setSelectedEpicId] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Get list of epics (top-level issues or those with children)
   const epics = useMemo(() => {
@@ -40,6 +45,42 @@ export function TreeView() {
     }
     return epics[0] || null;
   }, [epics, selectedEpicId]);
+
+  const openDropdown = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 4,
+        left: Math.min(rect.right - 280, window.innerWidth - 290),
+      });
+    }
+    setDropdownOpen(true);
+  };
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        !triggerRef.current?.contains(e.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDropdownOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [dropdownOpen]);
 
   if (isLoading) {
     return (
@@ -88,22 +129,68 @@ export function TreeView() {
         </div>
 
         {/* Epic Selector */}
-        <div className="relative">
-          <select
-            value={selectedEpic?.id || ""}
-            onChange={(e) => setSelectedEpicId(e.target.value)}
-            className="appearance-none bg-night-surface border border-night-border rounded-lg px-4 py-2 pr-10 text-text-primary cursor-pointer focus:outline-none focus:border-neon-cyan hover:bg-night-surface-bright transition-colors"
-          >
-            {epics.length === 0 && <option value="">No epics available</option>}
-            {epics.map((epic) => (
-              <option key={epic.id} value={epic.id}>
-                {epic.id}: {epic.title}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
-        </div>
+        <button
+          ref={triggerRef}
+          onClick={dropdownOpen ? () => setDropdownOpen(false) : openDropdown}
+          className={`flex items-center gap-2 bg-night-surface border rounded-lg px-4 py-2 text-sm transition-all cursor-pointer max-w-[280px] ${
+            dropdownOpen
+              ? "border-neon-cyan text-text-primary ring-1 ring-neon-cyan/30"
+              : "border-night-border text-text-normal hover:border-night-border-hover"
+          }`}
+        >
+          <span className="truncate flex-1 text-left">
+            {selectedEpic
+              ? `${selectedEpic.id}: ${selectedEpic.title}`
+              : "No epics available"}
+          </span>
+          <ChevronDown
+            className={`w-4 h-4 text-text-muted flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {dropdownOpen &&
+          createPortal(
+            <div
+              ref={menuRef}
+              className="fixed z-50 bg-night-surface border border-night-border rounded-lg shadow-xl py-1 w-[280px] animate-in fade-in zoom-in-95 duration-100 max-h-80 overflow-y-auto"
+              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            >
+              <div className="px-3 py-1.5 text-xs text-text-muted uppercase tracking-wider border-b border-night-border mb-1">
+                Select Epic
+              </div>
+              {epics.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-text-muted">
+                  No epics available
+                </div>
+              ) : (
+                epics.map((epic) => (
+                  <button
+                    key={epic.id}
+                    onClick={() => {
+                      setSelectedEpicId(epic.id);
+                      setDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left flex items-center gap-3 hover:bg-night-bg-highlight transition-colors ${
+                      selectedEpic?.id === epic.id
+                        ? "text-neon-cyan"
+                        : "text-text-normal"
+                    }`}
+                  >
+                    <span className="flex-1 truncate text-sm">
+                      <span className="text-text-muted mr-1.5">{epic.id}:</span>
+                      {epic.title}
+                    </span>
+                    {selectedEpic?.id === epic.id && (
+                      <Check className="w-4 h-4 text-neon-cyan flex-shrink-0" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>,
+            document.body,
+          )}
       </div>
+    </div>
 
       {/* Legend */}
       <div className="flex items-center gap-6 mb-6 text-xs text-text-muted">

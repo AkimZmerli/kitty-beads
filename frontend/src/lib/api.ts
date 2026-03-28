@@ -70,6 +70,19 @@ export async function updateIssue(
   });
 }
 
+export async function deleteIssue(
+  issueId: string,
+  force = false,
+): Promise<void> {
+  const url = force
+    ? `${API_BASE}/issues/${issueId}?force=true`
+    : `${API_BASE}/issues/${issueId}`;
+  const response = await fetch(url, { method: "DELETE" });
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+}
+
 // Diagnostics API
 export async function getDiagnostics(): Promise<DiagnosticsResponse> {
   return fetchJson<DiagnosticsResponse>(`${API_BASE}/diagnostics`);
