@@ -1,32 +1,56 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo } from "react";
 import { useRoadmap } from "../hooks/useRoadmap";
-import { BeadCard } from "../features/roadmap";
-import { MarkdownViewer } from "../components/ui";
-import { getIssue } from "../lib/api";
-import type { Issue } from "../types/api";
+import {
+  RoadmapProvider,
+  useRoadmapContext,
+  BeadCard,
+  RoadmapFilterBar,
+  GroupedView,
+  ContextMenu,
+  IssueModal,
+  useKeyboardNavigation,
+} from "../features/roadmap";
+import { flattenIssueTree } from "../features/roadmap/utils/grouping";
+import type { RoadmapIssue } from "../types/api";
+import type { FilterType } from "../features/roadmap/types";
 
-export function Roadmap() {
-  const navigate = useNavigate();
+function RoadmapContent() {
+  // Register keyboard handlers
+  useKeyboardNavigation();
+
   const { data, isLoading, error } = useRoadmap();
-  const [viewingIssue, setViewingIssue] = useState<Issue | null>(null);
-  const [loadingIssue, setLoadingIssue] = useState(false);
+  const {
+    activeFilter,
+    searchQuery,
+    groupBy,
+    expandedIds,
+    modalIssueId,
+    closeModal,
+    setFlattenedIssues,
+  } = useRoadmapContext();
 
-  const handleEditPlan = (issueId: string) => {
-    navigate(`/ideation/${issueId}`);
-  };
+  // Filter and search issues
+  const filteredIssues = useMemo(() => {
+    if (!data?.issues) return [];
 
-  const handleViewFull = async (issueId: string) => {
-    setLoadingIssue(true);
-    try {
-      const issue = await getIssue(issueId);
-      setViewingIssue(issue);
-    } catch (err) {
-      console.error("Failed to load issue:", err);
-    } finally {
-      setLoadingIssue(false);
+    let issues = data.issues;
+
+    // Apply filter
+    issues = applyFilter(issues, activeFilter);
+
+    // Apply search
+    if (searchQuery.trim()) {
+      issues = applySearch(issues, searchQuery);
     }
-  };
+
+    return issues;
+  }, [data?.issues, activeFilter, searchQuery]);
+
+  // Update flattened issues for keyboard navigation
+  useEffect(() => {
+    const flattened = flattenIssueTree(filteredIssues, expandedIds);
+    setFlattenedIssues(flattened);
+  }, [filteredIssues, expandedIds, setFlattenedIssues]);
 
   if (isLoading) {
     return (
@@ -34,7 +58,9 @@ export function Roadmap() {
         <h2 className="text-neon-cyan text-2xl font-bold mb-4 drop-shadow-[0_0_8px_rgba(125,207,255,0.3)]">
           Roadmap
         </h2>
-        <p className="text-text-muted text-center py-8">Loading roadmap...</p>
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-2 border-neon-cyan border-t-transparent rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
@@ -52,8 +78,6 @@ export function Roadmap() {
     );
   }
 
-  const issues = data?.issues || [];
-
   return (
     <div className="bg-card-bg rounded-xl p-8 border border-neon-magenta">
       {/* Header */}
@@ -67,154 +91,157 @@ export function Roadmap() {
             · {data?.totalCount || 0} total
           </p>
         </div>
+        {/* Keyboard shortcuts hint */}
+        <div className="text-xs text-text-muted hidden md:flex items-center gap-4">
+          <span>
+            <kbd className="bg-night-surface px-1.5 py-0.5 rounded">j</kbd>/
+            <kbd className="bg-night-surface px-1.5 py-0.5 rounded">k</kbd>{" "}
+            navigate
+          </span>
+          <span>
+            <kbd className="bg-night-surface px-1.5 py-0.5 rounded">Enter</kbd>{" "}
+            expand
+          </span>
+          <span>
+            <kbd className="bg-night-surface px-1.5 py-0.5 rounded">o</kbd> open
+          </span>
+          <span>
+            <kbd className="bg-night-surface px-1.5 py-0.5 rounded">Space</kbd>{" "}
+            menu
+          </span>
+        </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-6 border-b border-night-border pb-4">
-        <button className="px-4 py-2 bg-neon-cyan text-night-bg rounded-md text-sm font-medium shadow-[0_0_10px_rgba(125,207,255,0.3)]">
-          All
-        </button>
-        <button className="px-4 py-2 bg-night-surface text-text-normal rounded-md text-sm font-medium hover:bg-night-surface-bright transition-colors">
-          Epics
-        </button>
-        <button className="px-4 py-2 bg-night-surface text-text-normal rounded-md text-sm font-medium hover:bg-night-surface-bright transition-colors">
-          Open
-        </button>
-        <button className="px-4 py-2 bg-night-surface text-text-normal rounded-md text-sm font-medium hover:bg-night-surface-bright transition-colors">
-          P1 Only
-        </button>
-      </div>
+      {/* Filter bar */}
+      <RoadmapFilterBar />
 
       {/* Beads list */}
-      {issues.length === 0 ? (
+      {filteredIssues.length === 0 ? (
         <div className="text-center py-12 text-text-muted">
-          <p className="text-lg mb-2">No beads yet</p>
-          <p className="text-sm">
-            Create your first bead with{" "}
-            <code className="bg-night-surface px-2 py-0.5 rounded text-neon-cyan">
-              bd create "Your task"
-            </code>
-          </p>
+          {searchQuery || activeFilter !== "all" ? (
+            <>
+              <p className="text-lg mb-2">No matching beads</p>
+              <p className="text-sm">
+                Try adjusting your filters or search query
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-lg mb-2">No beads yet</p>
+              <p className="text-sm">
+                Create your first bead with{" "}
+                <code className="bg-night-surface px-2 py-0.5 rounded text-neon-cyan">
+                  bd create "Your task"
+                </code>
+              </p>
+            </>
+          )}
         </div>
-      ) : (
+      ) : groupBy === "none" ? (
         <div className="space-y-1">
-          {issues.map((issue) => (
+          {filteredIssues.map((issue, index) => (
             <BeadCard
               key={issue.id}
               issue={issue}
-              onEditPlan={handleEditPlan}
-              onViewFull={handleViewFull}
+              isLastChild={index === filteredIssues.length - 1}
             />
           ))}
         </div>
+      ) : (
+        <GroupedView issues={filteredIssues} groupBy={groupBy} />
       )}
 
-      {/* Full view modal */}
-      {(viewingIssue || loadingIssue) && (
-        <IssueModal
-          issue={viewingIssue}
-          loading={loadingIssue}
-          onClose={() => setViewingIssue(null)}
-        />
+      {/* Context menu (portal) */}
+      <ContextMenu />
+
+      {/* Issue modal */}
+      {modalIssueId && (
+        <IssueModal issueId={modalIssueId} onClose={closeModal} />
       )}
     </div>
   );
 }
 
-interface IssueModalProps {
-  issue: Issue | null;
-  loading: boolean;
-  onClose: () => void;
-}
-
-function IssueModal({ issue, loading, onClose }: IssueModalProps) {
+export function Roadmap() {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <div className="relative bg-card-bg rounded-xl w-[90%] max-w-[800px] max-h-[85vh] overflow-auto shadow-modal border border-night-border">
-        {/* Header */}
-        <div className="sticky top-0 bg-card-bg flex justify-between items-center p-5 border-b border-night-border z-10">
-          <h3 className="text-lg font-semibold text-text-primary">
-            {loading ? "Loading..." : `${issue?.id}: ${issue?.title}`}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-2xl text-text-muted hover:text-text-primary transition-colors"
-          >
-            &times;
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-5">
-          {loading ? (
-            <p className="text-text-muted">Loading issue details...</p>
-          ) : issue ? (
-            <>
-              {/* Metadata badges */}
-              <div className="flex gap-2 flex-wrap mb-5">
-                <span className="bg-red-900/30 text-neon-pink px-3 py-1 rounded-full text-sm font-medium">
-                  P{issue.priority}
-                </span>
-                <span className="bg-blue-900/30 text-neon-blue px-3 py-1 rounded-full text-sm font-medium">
-                  {issue.status || "open"}
-                </span>
-                {issue.issue_type && (
-                  <span className="bg-purple-900/30 text-neon-magenta px-3 py-1 rounded-full text-sm font-medium">
-                    {issue.issue_type}
-                  </span>
-                )}
-                {issue.assignee && (
-                  <span className="bg-night-surface-bright text-text-secondary px-3 py-1 rounded-full text-sm">
-                    {issue.assignee}
-                  </span>
-                )}
-              </div>
-
-              {/* Description */}
-              {issue.description && (
-                <div className="mb-6">
-                  <h4 className="text-neon-cyan font-semibold mb-3">
-                    Description
-                  </h4>
-                  <MarkdownViewer content={issue.description} />
-                </div>
-              )}
-
-              {/* Design/Plan */}
-              {issue.design && (
-                <div className="mb-6">
-                  <h4 className="text-neon-cyan font-semibold mb-3">
-                    Design / Plan
-                  </h4>
-                  <MarkdownViewer content={issue.design} />
-                </div>
-              )}
-
-              {/* Acceptance Criteria */}
-              {issue.acceptance_criteria && (
-                <div className="mb-6">
-                  <h4 className="text-neon-cyan font-semibold mb-3">
-                    Acceptance Criteria
-                  </h4>
-                  <MarkdownViewer content={issue.acceptance_criteria} />
-                </div>
-              )}
-
-              {/* No content fallback */}
-              {!issue.description &&
-                !issue.design &&
-                !issue.acceptance_criteria && (
-                  <p className="text-text-muted italic">
-                    No detailed content available for this bead.
-                  </p>
-                )}
-            </>
-          ) : (
-            <p className="text-neon-pink">Failed to load issue</p>
-          )}
-        </div>
-      </div>
-    </div>
+    <RoadmapProvider>
+      <RoadmapContent />
+    </RoadmapProvider>
   );
+}
+
+/**
+ * Apply filter to issue tree
+ */
+function applyFilter(
+  issues: RoadmapIssue[],
+  filter: FilterType,
+): RoadmapIssue[] {
+  if (filter === "all") return issues;
+
+  const filterIssue = (issue: RoadmapIssue): RoadmapIssue | null => {
+    // Check if this issue matches the filter
+    let matches = false;
+    switch (filter) {
+      case "epics":
+        matches =
+          issue.issue_type === "epic" || (issue.children?.length ?? 0) > 0;
+        break;
+      case "open":
+        matches = issue.status === "open" || issue.status === "in_progress";
+        break;
+      case "p1":
+        matches = issue.priority === 1;
+        break;
+    }
+
+    // Filter children recursively
+    const filteredChildren = issue.children
+      ?.map(filterIssue)
+      .filter((c): c is RoadmapIssue => c !== null);
+
+    // Include issue if it matches or has matching children
+    if (matches || (filteredChildren && filteredChildren.length > 0)) {
+      return {
+        ...issue,
+        children: filteredChildren,
+      };
+    }
+
+    return null;
+  };
+
+  return issues.map(filterIssue).filter((i): i is RoadmapIssue => i !== null);
+}
+
+/**
+ * Apply search to issue tree
+ */
+function applySearch(issues: RoadmapIssue[], query: string): RoadmapIssue[] {
+  const lowerQuery = query.toLowerCase();
+
+  const searchIssue = (issue: RoadmapIssue): RoadmapIssue | null => {
+    // Check if this issue matches the search
+    const matches =
+      issue.title.toLowerCase().includes(lowerQuery) ||
+      issue.id.toLowerCase().includes(lowerQuery) ||
+      issue.description?.toLowerCase().includes(lowerQuery);
+
+    // Search children recursively
+    const filteredChildren = issue.children
+      ?.map(searchIssue)
+      .filter((c): c is RoadmapIssue => c !== null);
+
+    // Include issue if it matches or has matching children
+    if (matches || (filteredChildren && filteredChildren.length > 0)) {
+      return {
+        ...issue,
+        children: filteredChildren,
+      };
+    }
+
+    return null;
+  };
+
+  return issues.map(searchIssue).filter((i): i is RoadmapIssue => i !== null);
 }

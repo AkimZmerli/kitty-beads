@@ -62,6 +62,16 @@ The graph shows execution order:
 Status icons: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
+		tuiFlag, _ := cmd.Flags().GetBool("tui")
+		if tuiFlag {
+			rootID := ""
+			if len(args) > 0 {
+				rootID = args[0]
+			}
+			runGraphTUI(rootID)
+			return
+		}
+
 		ctx := rootCtx
 
 		// Validate args
@@ -117,7 +127,7 @@ Status icons: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred`,
 					renderGraph(layout, subgraph)
 				}
 				if i < len(subgraphs)-1 {
-					fmt.Println(strings.Repeat("─", 60))
+					fmt.Println(ui.NeonLayerStyle(i % 5).Render(strings.Repeat("─", 60)))
 				}
 			}
 			return
@@ -177,6 +187,7 @@ func init() {
 	graphCmd.Flags().BoolVar(&graphAll, "all", false, "Show graph for all open issues")
 	graphCmd.Flags().BoolVar(&graphCompact, "compact", false, "Tree format, one line per issue, more scannable")
 	graphCmd.Flags().BoolVar(&graphBox, "box", true, "ASCII boxes showing layers (default)")
+	graphCmd.Flags().Bool("tui", false, "Launch interactive TUI graph browser")
 	graphCmd.ValidArgsFunction = issueIDCompletion
 	rootCmd.AddCommand(graphCmd)
 }
@@ -508,7 +519,7 @@ func renderGraph(layout *GraphLayout, subgraph *TemplateSubgraph) {
 		return
 	}
 
-	fmt.Printf("\n%s Dependency graph for %s:\n\n", ui.RenderAccent("📊"), layout.RootID)
+	fmt.Printf("\n  %s  %s\n\n", ui.NeonLayerStyle(0).Render("◈"), ui.AccentStyle.Bold(true).Render("dep graph · "+layout.RootID))
 
 	// Calculate box width based on longest title
 	maxTitleLen := 0
@@ -519,13 +530,6 @@ func renderGraph(layout *GraphLayout, subgraph *TemplateSubgraph) {
 		}
 	}
 	boxWidth := maxTitleLen + 4 // padding
-
-	// Render each layer
-	// For simplicity, we'll render layer by layer with arrows between them
-
-	// First, show the legend
-	fmt.Println("  Status: ○ open  ◐ in_progress  ● blocked  ✓ closed")
-	fmt.Println()
 
 	// Build dependency counts from subgraph
 	blocksCounts, blockedByCounts := computeDependencyCounts(subgraph)
@@ -555,11 +559,11 @@ func renderGraph(layout *GraphLayout, subgraph *TemplateSubgraph) {
 	// Render horizontally (simplified - just show boxes with arrows)
 	for layerIdx, boxes := range layerBoxes {
 		// Print layer header
-		fmt.Printf("  Layer %d", layerIdx)
+		layerLabel := fmt.Sprintf("  layer %d", layerIdx)
 		if layerIdx == 0 {
-			fmt.Print(" (ready)")
+			layerLabel += "  ready"
 		}
-		fmt.Println()
+		fmt.Println(ui.NeonLayerStyle(layerIdx).Render(layerLabel))
 
 		for _, box := range boxes {
 			fmt.Println(box)
@@ -567,8 +571,8 @@ func renderGraph(layout *GraphLayout, subgraph *TemplateSubgraph) {
 
 		// Print arrows to next layer if not last
 		if layerIdx < len(layerBoxes)-1 {
-			fmt.Println("      │")
-			fmt.Println("      ▼")
+			fmt.Println(ui.NeonLayerStyle(layerIdx).Render("      │"))
+			fmt.Println(ui.NeonLayerStyle(layerIdx+1).Render("      ▼"))
 		}
 		fmt.Println()
 	}
@@ -586,8 +590,7 @@ func renderGraph(layout *GraphLayout, subgraph *TemplateSubgraph) {
 		}
 	}
 
-	// Show summary
-	fmt.Printf("  Total: %d issues across %d layers\n\n", len(layout.Nodes), len(layout.Layers))
+	fmt.Println(ui.MutedStyle.Render(fmt.Sprintf("  %d issues · %d layers", len(layout.Nodes), len(layout.Layers))))
 }
 
 // renderGraphCompact renders the graph in compact tree format
@@ -598,12 +601,10 @@ func renderGraphCompact(layout *GraphLayout, subgraph *TemplateSubgraph) {
 		return
 	}
 
-	fmt.Printf("\n%s Dependency graph for %s (%d issues, %d layers)\n\n",
-		ui.RenderAccent("📊"), layout.RootID, len(layout.Nodes), len(layout.Layers))
-
-	// Legend
-	fmt.Println("  Status: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred")
-	fmt.Println()
+	fmt.Printf("\n  %s  %s\n\n",
+		ui.NeonLayerStyle(0).Render("◈"),
+		ui.AccentStyle.Bold(true).Render(fmt.Sprintf("dep graph · %s  %s", layout.RootID,
+			ui.MutedStyle.Render(fmt.Sprintf("(%d issues, %d layers)", len(layout.Nodes), len(layout.Layers))))))
 
 	// Build parent-child map from subgraph dependencies
 	children := make(map[string][]string) // parent -> children
@@ -631,11 +632,11 @@ func renderGraphCompact(layout *GraphLayout, subgraph *TemplateSubgraph) {
 	// Render by layer with tree structure
 	for layerIdx, layer := range layout.Layers {
 		// Layer header
-		layerHeader := fmt.Sprintf("LAYER %d", layerIdx)
+		layerHeader := fmt.Sprintf("layer %d", layerIdx)
 		if layerIdx == 0 {
-			layerHeader += " (ready)"
+			layerHeader += "  ready"
 		}
-		fmt.Printf("  %s\n", ui.RenderAccent(layerHeader))
+		fmt.Printf("  %s\n", ui.NeonLayerStyle(layerIdx).Render(layerHeader))
 
 		for i, id := range layer {
 			node := layout.Nodes[id]
@@ -703,8 +704,7 @@ func formatCompactNode(node *GraphNode) string {
 	// Use shared status icon with semantic color
 	statusIcon := ui.RenderStatusIcon(status)
 
-	// Priority with icon
-	priorityTag := ui.RenderPriority(node.Issue.Priority)
+	priorityTag := ui.RenderPriorityCompact(node.Issue.Priority)
 
 	// Title - truncate if too long
 	title := truncateTitle(node.Issue.Title, 50)
@@ -715,7 +715,7 @@ func formatCompactNode(node *GraphNode) string {
 		return fmt.Sprintf("%s %s %s %s",
 			statusIcon,
 			style.Render(node.Issue.ID),
-			style.Render(fmt.Sprintf("● P%d", node.Issue.Priority)),
+			style.Render(fmt.Sprintf("P%d", node.Issue.Priority)),
 			style.Render(title))
 	}
 
@@ -852,24 +852,24 @@ func renderNodeBoxWithDeps(node *GraphNode, width int, blocksCount int, blockedB
 		depInfoStyled = strings.Join(styledParts, " ")
 	}
 
-	// Build the box
-	topBottom := "  ┌" + strings.Repeat("─", width) + "┐"
-	middle := fmt.Sprintf("  │ %s %s │", statusIcon, titleStr)
-	idLine := fmt.Sprintf("  │ %s │", ui.RenderMuted(padRight(id, width-2)))
+	// Build the box with neon-colored borders keyed to status
+	bs := ui.GraphBorderStyle(status)
+	top := bs.Render("  ┌" + strings.Repeat("─", width) + "┐")
+	bot := bs.Render("  └" + strings.Repeat("─", width) + "┘")
+	lp := bs.Render("│")
+	middle := "  " + lp + " " + statusIcon + " " + titleStr + " " + lp
+	idLine := "  " + lp + " " + ui.RenderMuted(padRight(id, width-2)) + " " + lp
 
 	var result string
 	if depInfoPlain != "" {
-		// Pad based on plain text length, then render with styled version
 		padding := width - 2 - len([]rune(depInfoPlain))
 		if padding < 0 {
 			padding = 0
 		}
-		depLine := fmt.Sprintf("  │ %s%s │", depInfoStyled, strings.Repeat(" ", padding))
-		bottom := "  └" + strings.Repeat("─", width) + "┘"
-		result = topBottom + "\n" + middle + "\n" + idLine + "\n" + depLine + "\n" + bottom
+		depLine := "  " + lp + " " + depInfoStyled + strings.Repeat(" ", padding) + " " + lp
+		result = top + "\n" + middle + "\n" + idLine + "\n" + depLine + "\n" + bot
 	} else {
-		bottom := "  └" + strings.Repeat("─", width) + "┘"
-		result = topBottom + "\n" + middle + "\n" + idLine + "\n" + bottom
+		result = top + "\n" + middle + "\n" + idLine + "\n" + bot
 	}
 
 	return result

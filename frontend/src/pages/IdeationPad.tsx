@@ -2,8 +2,17 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useIdeation } from "../hooks/useIdeation";
 import { MarkdownViewer } from "../components/ui";
+import { CommentThread } from "../features/comments";
 import { extractSummary } from "../lib/planParser";
-import { ChevronLeft } from "lucide-react";
+import {
+  ChevronLeft,
+  AlertTriangle,
+  RefreshCw,
+  X,
+  MessageCircle,
+  PanelRightClose,
+  PanelRightOpen,
+} from "lucide-react";
 
 type ViewMode = "split" | "edit" | "preview";
 
@@ -14,8 +23,19 @@ export function IdeationPad() {
   const [content, setContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("split");
+  const [showComments, setShowComments] = useState(false);
 
-  const { issue, isLoading, error, save, isSaving } = useIdeation({
+  const {
+    issue,
+    isLoading,
+    error,
+    save,
+    isSaving,
+    hasExternalChanges,
+    startEditing,
+    refreshContent,
+    dismissConflict,
+  } = useIdeation({
     issueId: issueId || "",
     onSaveSuccess: () => {
       setHasChanges(false);
@@ -36,9 +56,17 @@ export function IdeationPad() {
       setContent(newContent);
       const original = issue?.design || issue?.description || "";
       setHasChanges(newContent !== original);
+      // Track that user started editing
+      startEditing(original);
     },
-    [issue],
+    [issue, startEditing],
   );
+
+  const handleRefresh = useCallback(() => {
+    // Refresh will reload the issue, triggering the useEffect to update content
+    refreshContent();
+    setHasChanges(false);
+  }, [refreshContent]);
 
   const handleSave = useCallback(() => {
     save({ design: content });
@@ -148,6 +176,24 @@ export function IdeationPad() {
             </button>
           </div>
 
+          {/* Comments toggle */}
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+              showComments
+                ? "bg-neon-cyan text-night-bg"
+                : "bg-night-surface text-text-muted hover:text-text-primary"
+            }`}
+            title={showComments ? "Hide comments" : "Show comments"}
+          >
+            <MessageCircle className="w-4 h-4" />
+            {showComments ? (
+              <PanelRightClose className="w-4 h-4" />
+            ) : (
+              <PanelRightOpen className="w-4 h-4" />
+            )}
+          </button>
+
           {/* Action buttons */}
           <button
             onClick={handleCancel}
@@ -169,6 +215,35 @@ export function IdeationPad() {
         </div>
       </div>
 
+      {/* External changes warning banner */}
+      {hasExternalChanges && (
+        <div className="px-6 py-3 bg-orange-900/20 border-b border-orange-900/30 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-neon-orange" />
+            <p className="text-sm text-neon-orange">
+              <span className="font-medium">External changes detected!</span>{" "}
+              This issue was modified by another session.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/30 text-neon-orange text-sm rounded-md hover:bg-orange-900/40 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+            <button
+              onClick={dismissConflict}
+              className="p-1.5 text-text-muted hover:text-text-primary transition-colors"
+              title="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Summary preview */}
       {summary && (
         <div className="px-6 py-3 bg-blue-900/20 border-b border-blue-900/30">
@@ -180,45 +255,57 @@ export function IdeationPad() {
 
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Editor */}
-        {(viewMode === "edit" || viewMode === "split") && (
-          <div
-            className={`flex flex-col ${viewMode === "split" ? "w-1/2 border-r border-night-border" : "flex-1"}`}
-          >
-            <div className="px-4 py-2 bg-night-bg-highlight border-b border-night-border">
-              <span className="text-xs text-text-muted uppercase tracking-wider font-medium">
-                Editor
-              </span>
+        {/* Editor/Preview section */}
+        <div
+          className={`flex-1 flex overflow-hidden ${showComments ? "border-r border-night-border" : ""}`}
+        >
+          {/* Editor */}
+          {(viewMode === "edit" || viewMode === "split") && (
+            <div
+              className={`flex flex-col ${viewMode === "split" ? "w-1/2 border-r border-night-border" : "flex-1"}`}
+            >
+              <div className="px-4 py-2 bg-night-bg-highlight border-b border-night-border">
+                <span className="text-xs text-text-muted uppercase tracking-wider font-medium">
+                  Editor
+                </span>
+              </div>
+              <textarea
+                value={content}
+                onChange={(e) => handleContentChange(e.target.value)}
+                className="flex-1 p-4 font-mono text-sm resize-none focus:outline-none bg-night-bg text-text-bright placeholder:text-text-muted"
+                placeholder="Write your plan in markdown..."
+                spellCheck={false}
+              />
             </div>
-            <textarea
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              className="flex-1 p-4 font-mono text-sm resize-none focus:outline-none bg-night-bg text-text-bright placeholder:text-text-muted"
-              placeholder="Write your plan in markdown..."
-              spellCheck={false}
-            />
-          </div>
-        )}
+          )}
 
-        {/* Preview */}
-        {(viewMode === "preview" || viewMode === "split") && (
-          <div
-            className={`flex flex-col ${viewMode === "split" ? "w-1/2" : "flex-1"}`}
-          >
-            <div className="px-4 py-2 bg-night-bg-highlight border-b border-night-border">
-              <span className="text-xs text-text-muted uppercase tracking-wider font-medium">
-                Preview
-              </span>
+          {/* Preview */}
+          {(viewMode === "preview" || viewMode === "split") && (
+            <div
+              className={`flex flex-col ${viewMode === "split" ? "w-1/2" : "flex-1"}`}
+            >
+              <div className="px-4 py-2 bg-night-bg-highlight border-b border-night-border">
+                <span className="text-xs text-text-muted uppercase tracking-wider font-medium">
+                  Preview
+                </span>
+              </div>
+              <div className="flex-1 p-4 overflow-auto bg-night-surface">
+                {content ? (
+                  <MarkdownViewer content={content} />
+                ) : (
+                  <p className="text-text-muted italic">
+                    Start writing to see preview...
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="flex-1 p-4 overflow-auto bg-night-surface">
-              {content ? (
-                <MarkdownViewer content={content} />
-              ) : (
-                <p className="text-text-muted italic">
-                  Start writing to see preview...
-                </p>
-              )}
-            </div>
+          )}
+        </div>
+
+        {/* Comments panel */}
+        {showComments && issueId && (
+          <div className="w-80 flex-shrink-0 bg-night-surface">
+            <CommentThread issueId={issueId} className="h-full" />
           </div>
         )}
       </div>

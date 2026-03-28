@@ -1,10 +1,10 @@
 # Kitty-Beads Makefile
 # Beads issue tracker with Spec Kitty dashboard UI
 
-.PHONY: all build run clean deps test help
+.PHONY: all build run clean deps test help dev dev-prod
 
 # Default target
-all: build
+all: dev
 
 # Build the server binary
 build:
@@ -14,17 +14,25 @@ build:
 # Run the server (builds first if needed)
 run: build
 	@echo "Starting kitty-beads server..."
-	./bin/kitty-beads -port 8080
+	./bin/kitty-beads -port 8000
 
-# Run in development mode
+# Dev mode: backend on :8000 proxies to Vite for hot reload.
+# Open http://localhost:8000 — terminal WebSocket goes direct to Go, no disconnect.
 dev:
-	@echo "Starting server on http://localhost:8080"
-	cd backend && go run ./cmd/server -port 8080
+	@echo "Starting kitty-beads on http://localhost:8000 (hot reload)"
+	@trap 'kill 0' EXIT; \
+		(cd frontend && pnpm dev) & \
+		(cd backend && go run ./cmd/server -port 8000 -dev)
+
+# Production mode: backend only, serves pre-built embedded frontend
+dev-prod:
+	@echo "Starting server on http://localhost:8000 (pre-built frontend)"
+	cd backend && go run ./cmd/server -port 8000
 
 # Build frontend (run after making frontend changes)
 build-frontend:
 	@echo "Building frontend..."
-	cd frontend && npm run build
+	cd frontend && pnpm build
 	@echo "Copying dist to server for embedding..."
 	rm -rf backend/cmd/server/frontend-dist
 	cp -r frontend/dist backend/cmd/server/frontend-dist
@@ -68,7 +76,8 @@ help:
 	@echo "Usage:"
 	@echo "  make build     - Build the server binary"
 	@echo "  make run       - Build and run the server"
-	@echo "  make dev       - Run in development mode"
+	@echo "  make dev       - Run backend only (serves pre-built frontend)"
+	@echo "  make dev-hot   - Run with frontend hot reload (use localhost:5173)"
 	@echo "  make deps      - Download dependencies"
 	@echo "  make tidy      - Tidy Go modules"
 	@echo "  make test      - Run tests"

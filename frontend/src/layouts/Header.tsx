@@ -34,9 +34,9 @@ export function Header({
   }));
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 flex items-center pl-4 pr-8 h-18 bg-night-bg border-b border-night-border">
+    <header className="fixed top-0 left-0 right-0 z-30 flex  items-center h-18 bg-night-bg border-b border-night-border">
       {/* Logo Section - never shrinks */}
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center p-2 gap-2 shrink-0">
         <CatLogo />
         <div>
           <h1 className="text-2xl font-bold text-neon-cyan whitespace-nowrap drop-shadow-[0_0_10px_rgba(125,207,255,0.3)]">

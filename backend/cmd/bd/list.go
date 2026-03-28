@@ -868,6 +868,13 @@ var listCmd = &cobra.Command{
 			filter.Overdue = true
 		}
 
+		// Interactive TUI mode (bd-rjv.1)
+		tuiFlag, _ := cmd.Flags().GetBool("tui")
+		if tuiFlag {
+			runListTUI(filter)
+			return
+		}
+
 		// Check database freshness before reading
 		// Skip check when using daemon (daemon auto-imports on staleness)
 		ctx := rootCtx
@@ -1333,6 +1340,9 @@ func init() {
 
 	// Pager control (bd-jdz3)
 	listCmd.Flags().Bool("no-pager", false, "Disable pager output")
+
+	// Interactive TUI mode (bd-rjv.1)
+	listCmd.Flags().Bool("tui", false, "Launch interactive TUI browser")
 
 	// Ready filter: show only issues ready to be worked on (bd-ihu31)
 	listCmd.Flags().Bool("ready", false, "Show only ready issues (status=open, excludes hooked/in_progress/blocked/deferred)")

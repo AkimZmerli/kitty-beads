@@ -1,12 +1,14 @@
 import { NavLink } from "react-router-dom";
 import { useTerminal } from "../features/terminal";
 import {
+  Map,
   GitBranch,
   Target,
   PenTool,
   Activity,
   Terminal,
   Settings,
+  Code2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -51,11 +53,11 @@ function TerminalNavItem({
   icon: LucideIcon;
   label: string;
 }) {
-  const { openPanel, isOpen } = useTerminal();
+  const { togglePanel, isOpen } = useTerminal();
 
   return (
     <button
-      onClick={openPanel}
+      onClick={togglePanel}
       className={`w-full flex items-center gap-3 px-5 py-3 border-l-3 transition-all ${
         isOpen
           ? "bg-night-bg-highlight text-neon-cyan border-neon-cyan font-semibold"
@@ -92,15 +94,19 @@ export function Sidebar() {
       style={{ top: `${HEADER_HEIGHT}px` }}
     >
       <SidebarSection title="Views" />
-      <NavItem to="/tree" icon={GitBranch} label="Tree Graph" />
+      <NavItem to="/roadmap" icon={Map} label="Roadmap" />
+      <NavItem to="/tree" icon={GitBranch} label="Tree" />
       <NavItem to="/kanban" icon={Target} label="Kanban" />
       <NavItem to="/whiteboard" icon={PenTool} label="Whiteboard" />
+
+      <SidebarSection title="Tools" />
+      <NavItem to="/editor" icon={Code2} label="Editor" />
+      <TerminalNavItem icon={Terminal} label="Terminal" />
 
       <SidebarSection title="Collaborate" />
       <NavItem to="/activity" icon={Activity} label="Activity" />
 
       <SidebarSection title="System" />
-      <TerminalNavItem icon={Terminal} label="Terminal" />
       <NavItem to="/diagnostics" icon={Settings} label="Diagnostics" />
     </aside>
   );
